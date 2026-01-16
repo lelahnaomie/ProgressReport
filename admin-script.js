@@ -139,14 +139,14 @@ function setupTaskForm() {
         assignform.reset();
         
         showToast('task assigned successfully!', 'success');
-        updateUI(); // This will update stats properly
+        updateUI();
     });
 }
 
 // filtering functions
 function filterByTime(type) {
     currentFilter = type;
-    currentPage.reports = 1; // Reset to first page when filtering
+    currentPage.reports = 1;
     document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById(`filter-${type}`);
     if (btn) btn.classList.add('active');
@@ -249,6 +249,8 @@ function updateTable(data) {
 
     // Add pagination controls
     addPaginationControls('report-rows', data.length, currentPage.reports, 'reports');
+    addPaginationControls('-rows', data.length, currentPage.reports, 'reports');
+
 }
 
 function addPaginationControls(tableId, totalItems, currentPageNum, type) {
@@ -463,7 +465,6 @@ function updateTeam() {
     const tbody = document.getElementById('leaderboard-rows');
     if (!tbody) return;
 
-    // Pagination for leaderboard
     const totalPages = Math.ceil(board.length / itemsPerPage);
     const startIndex = (currentPage.leaderboard - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -491,7 +492,6 @@ function updateTeam() {
         `;
     }).join('');
 
-    // Add pagination controls for leaderboard
     addPaginationControls('leaderboard-rows', board.length, currentPage.leaderboard, 'leaderboard');
 }
 

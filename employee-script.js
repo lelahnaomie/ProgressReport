@@ -111,7 +111,6 @@ function updateReportsTable() {
         } else {
             const sorted = [...myReports].sort((a, b) => b.id - a.id);
             
-            // Pagination logic
             const totalPages = Math.ceil(sorted.length / itemsPerPage);
             const startIndex = (currentPage.reports - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
@@ -127,7 +126,6 @@ function updateReportsTable() {
                 </tr>
             `).join('');
 
-            // Add pagination controls
             addPaginationControls('my-reports-rows', sorted.length, currentPage.reports, 'reports');
         }
     }
@@ -150,7 +148,6 @@ function updateTaskTable() {
     } else {
         const sorted = [...myTasks].sort((a, b) => b.id - a.id);
 
-        // Pagination logic
         const totalPages = Math.ceil(sorted.length / itemsPerPage);
         const startIndex = (currentPage.tasks - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
@@ -167,11 +164,10 @@ function updateTaskTable() {
             </tr>
         `).join('');
 
-        // Add pagination controls
         addPaginationControls('task-row', sorted.length, currentPage.tasks, 'tasks');
     }
 
-    // Update task statistics
+
     updateCounter('totalTasks', myTasks.length);
 }
 
@@ -282,7 +278,6 @@ function openTaskModal(taskId) {
     const task = allAssignTasks.find(t => t.id === taskId);
     if (!task) return;
     
-    // You can implement a task modal similar to report modal if needed
     alert(`Task: ${task.task}\nStatus: ${task.status}\nDue: ${task.dueDate}`);
 }
 
