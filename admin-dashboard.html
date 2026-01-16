@@ -1,325 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="common.css">
-    <link rel="stylesheet" href="style.css">
-    <title>admin dashboard - customerpull</title>
-</head>
-<body>
-    <div class="dashboard-wrapper">
-          <div class="header-right">
-            <div class="user-info-container">
-                <span class="username-display">
-                    <i class="fas fa-user"></i>
-                    <span id="headerUsername">Admin</span>
-                </span>
-                <button class="profile-icon-btn" onclick="showSection('settings-view', document.querySelectorAll('.nav-item')[2])">
-                    <i class="fas fa-user-circle"></i>
-                </button>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="common.css">
+        <link rel="stylesheet" href="style.css">
+        <title>admin dashboard - customerpull</title>
+    </head>
+    <body>
+        <div class="dashboard-wrapper">
+            <div class="header-right">
+                <div class="user-info-container">
+                    <span class="username-display">
+                        <i class="fas fa-user"></i>
+                        <span id="headerUsername">Admin</span>
+                    </span>
+                    <button class="profile-icon-btn" onclick="showSection('settings-view', document.querySelectorAll('.nav-item')[2])">
+                        <i class="fas fa-user-circle"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>Customer<span>Pull</span></h2>
-                <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">admin panel</p>
-            </div>
-            <nav>
-                <div class="nav-item active" onclick="showSection('analytics-view', this)">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Analytics</span>
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Customer
+                        <span>Pull</span>
+                    </h2>
+                    <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">admin panel</p>
                 </div>
-                <div class="nav-item" onclick="showSection('submit-view', this)">
-                    <i class="fas fa-edit"></i>
-                    <span>Submit Report</span>
-                </div>
-                <div class="nav-item" onclick="showSection('team-view', this)">
-                    <i class="fas fa-users"></i>
-                    <span>Team Overview</span>
-                </div>
-                <div class="nav-item" onclick="showSection('settings-view', this)">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </div>
-            </nav>
-            <div class="sidebar-footer">
-                <button class="logout-btn" onclick="handleLogout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <!-- analytics section -->
-            <section id="analytics-view">
-                <div class="content-header">
-                    <h1>Analytics Dashboard</h1>
-                    <div class="export-group">
-                        <button class="btn-excel" onclick="exportExcel()">
-                            <i class="fas fa-file-excel"></i> Excel
-                        </button>
-                        <button class="btn-pdf" onclick="exportPDF()">
-                            <i class="fas fa-file-pdf"></i> Pdf
-                        </button>
+                <nav>
+                    <div class="nav-item active" onclick="showSection('analytics-view', this)">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
                     </div>
+                    <div class="nav-item" onclick="showSection('assign-view',this)">
+                        <i class="fas fa-edit"></i>
+                        <span>Assign Tasks</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('team-view', this)">
+                        <i class="fas fa-users"></i>
+                        <span>Team Overview</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('settings-view', this)">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+                </nav>
+                <div class="sidebar-footer">
+                    <button class="logout-btn" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
                 </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon green">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3 id="totalReports">0</h3>
-                            <p>Total reports</p>
+            </aside>
+            <main class="main-content">
+                <!-- analytics section -->
+                <section id="analytics-view">
+                    <div class="content-header">
+                        <h1>Analytics Dashboard</h1>
+                        <div class="export-group">
+                            <button class="btn-excel" onclick="exportExcel()">
+                                <i class="fas fa-file-excel"></i>
+                                Excel
+                            </button>
+                            <button class="btn-pdf" onclick="exportPDF()">
+                                <i class="fas fa-file-pdf"></i>
+                                Pdf
+                            </button>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon yellow">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3 id="pendingReports">0</h3>
-                            <p>Pending review</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon blue">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3 id="activeEmployees">0</h3>
-                            <p>Active employees</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon red">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3 id="thisWeek">0</h3>
-                            <p>This week</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filter-bar">
-                    <button id="filter-daily" onclick="filterByTime('daily')">daily</button>
-                    <button id="filter-weekly" onclick="filterByTime('weekly')">weekly</button>
-                    <button id="filter-monthly" onclick="filterByTime('monthly')">monthly</button>
-                    <button id="filter-all" class="active" onclick="filterByTime('all')">all time</button>
-                </div>
-
-             
-
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="search by employee name or department" onkeyup="searchReports()">
-                    <i class="fas fa-search"></i>
-                </div>
-
-                <div class="charts-grid">
-                    <div class="chart-card">
-                        <h3>Department distribution</h3>
-                        <canvas id="deptChart"></canvas>
-                    </div>
-                    <div class="chart-card">
-                        <h3>Status overview</h3>
-                        <canvas id="statusChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="table-card">
-                    <h3>All employee reports</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>date</th>
-                                <th>employee</th>
-                                <th>department</th>
-                                <th>period</th>
-                                <th>status</th>
-                                <th>action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="report-rows"></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- submit report section  -->
-            <section id="submit-view" style="display:none;">
-                <div class="content-header">
-                    <h1>Submit work report</h1>
-                </div>
-                <div class="standard-form">
-                    <h2>Progress report</h2>
-                    <form id="submissionForm">
-                        <input type="text" id="staffName" placeholder="full name" required>
-                        
-                        <select id="staffDept" required>
-                            <option value="">select department</option>
-                            <option value="Development">development</option>
-                            <option value="Marketing">marketing</option>
-                            <option value="Operations Management">operations management</option>
-                            <option value="Design">design</option>
-                        </select>
-
-                        <div class="date-row">
-                            <div class="group">
-                                <label>start date</label>
-                                <input type="date" id="startDate" required>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-file-alt"></i>
                             </div>
-                            <div class="group">
-                                <label>end date</label>
-                                <input type="date" id="endDate" required>
+                            <div class="stat-details">
+                                <h3 id="totalReports">0</h3>
+                                <p>Total reports</p>
                             </div>
                         </div>
-
-                        <textarea id="taskContent" placeholder="describe the tasks completed during this period..." rows="6" required></textarea>
-
-                        <button type="submit" class="btn">submit report</button>
-                    </form>
-                </div>
-            </section>
-
-            <!-- team overview section -->
-            <section id="team-view" style="display:none;">
-                <div class="content-header">
-                    <h1>Team performance</h1>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon green">
-                            <i class="fas fa-trophy"></i>
+                           <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="pendingReports">0</h3>
+                                <p>Pending review</p>
+                            </div>
                         </div>
-                        <div class="stat-details">
-                            <h3 id="topPerformer">-</h3>
-                            <p>top performer</p>
+                        <div class="stat-card">
+                            <div class="stat-icon yellow">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="totalTasks">0</h3>
+                                <p>Tasks Assigned</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon yellow">
-                            <i class="fas fa-chart-line"></i>
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="activeEmployees">0</h3>
+                                <p>Active employees</p>
+                            </div>
                         </div>
-                        <div class="stat-details">
-                            <h3 id="avgReports">0</h3>
-                            <p>avg reports/employee</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon blue">
-                            <i class="fas fa-building"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3 id="topDept">-</h3>
-                            <p>most active dept</p>
+                        <div class="stat-card">
+                            <div class="stat-icon red">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="thisWeek">0</h3>
+                                <p>This week</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="chart-card">
-                    <h3>team activity timeline</h3>
-                    <canvas id="timelineChart"></canvas>
-                </div>
-
-                <div class="table-card">
-                    <h3>employee leaderboard</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>rank</th>
-                                <th>employee</th>
-                                <th>department</th>
-                                <th>total</th>
-                                <th>approved</th>
-                                <th>performance</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboard-rows"></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- settings section -->
-            <section id="settings-view" style="display:none;">
-                <div class="content-header">
-                    <h1>admin settings</h1>
-                </div>
-                <div class="standard-form">
-                    <h2>account configuration</h2>
-                    <div class="form-group">
-                        <label>display name</label>
-                        <input type="text" id="adminName" value="administrator">
+                    <div class="filter-bar">
+                        <button id="filter-daily" onclick="filterByTime('daily')">daily</button>
+                        <button id="filter-weekly" onclick="filterByTime('weekly')">weekly</button>
+                        <button id="filter-monthly" onclick="filterByTime('monthly')">monthly</button>
+                        <button id="filter-all" class="active" onclick="filterByTime('all')">all time</button>
                     </div>
-                    <div class="form-group">
-                        <label>email address</label>
-                        <input type="email" id="adminEmail" value="admin@customerpull.com">
+                    <div class="search-bar">
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="search by employee name or department"
+                            onkeyup="searchReports()"
+                        >
+                        <i class="fas fa-search"></i>
                     </div>
-                    <div class="form-group">
-                        <label>department</label>
-                        <select id="adminDept">
-                            <option>management</option>
-                            <option>development</option>
-                            <option>marketing</option>
-                            <option>design</option>
-                            <option>operations management</option>
-                        </select>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Department distribution</h3>
+                            <canvas id="deptChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Status overview</h3>
+                            <canvas id="statusChart"></canvas>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>notification preferences</label>
-                        <select id="notifPref">
-                            <option>all reports</option>
-                            <option>pending only</option>
-                            <option>none</option>
-                        </select>
+                    <div class="table-card">
+                        <h3>All employee reports</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>date</th>
+                                    <th>employee</th>
+                                    <th>department</th>
+                                    <th>period</th>
+                                    <th>status</th>
+                                    <th>action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-rows"></tbody>
+                        </table>
                     </div>
-                    <button class="btn" onclick="saveSettings()">save changes</button>
-                    <button class="btn" onclick="clearAllData()" style="background: var(--danger); margin-top: 1rem;">clear all data</button>
+                </section>
+                <!-- assigning tasks section -->
+                <section id="assign-view" style="display: none;">
+                    <div class="content-header">
+                        <h1>Assign tasks</h1>
+                    </div>
+                    <div class="standard-form">
+                        <h2>Assigning tasks</h2>
+                        <form id="assignForm">
+                            <input
+                                type="text"
+                                id="assignName"
+                                placeholder="assignee name"
+                                required
+                            >
+                            <select id="assignDept" required>
+                                <option value="">select department</option>
+                                <option value="Development">development</option>
+                                <option value="Marketing">marketing</option>
+                                <option value="Operations Management">operations management</option>
+                                <option value="Design">design</option>
+                            </select>
+                            <div class="date-row">
+                                <div class="group">
+                                    <label>assigned date</label>
+                                    <input type="date" id="assignedDate" required>
+                                </div>
+                                <div class="group">
+                                    <label>due date</label>
+                                    <input type="date" id="dueDate" required>
+                                </div>
+                            </div>
+                            <textarea
+                                id="assignTask"
+                                placeholder="describe the task to be assigned..."
+                                rows-6
+                                required
+                            ></textarea>
+                            <button type="submit" class="btn">assign task</button>
+                        </form>
+                    </div>
+                </section>
+                <!-- team overview section -->
+                <section id="team-view" style="display:none;">
+                    <div class="content-header">
+                        <h1>Team performance</h1>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="topPerformer">-</h3>
+                                <p>top performer</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon yellow">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="avgReports">0</h3>
+                                <p>avg reports/employee</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="topDept">-</h3>
+                                <p>most active dept</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>team activity timeline</h3>
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                    <div class="table-card">
+                        <h3>employee leaderboard</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>rank</th>
+                                    <th>employee</th>
+                                    <th>department</th>
+                                    <th>total</th>
+                                    <th>approved</th>
+                                    <th>performance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-rows"></tbody>
+                        </table>
+                    </div>
+                </section>
+                <!-- settings section -->
+                <section id="settings-view" style="display:none;">
+                    <div class="content-header">
+                        <h1>admin settings</h1>
+                    </div>
+                    <div class="standard-form">
+                        <h2>account configuration</h2>
+                        <div class="form-group">
+                            <label>display name</label>
+                            <input type="text" id="adminName" value="administrator">
+                        </div>
+                        <div class="form-group">
+                            <label>email address</label>
+                            <input type="email" id="adminEmail" value="admin@customerpull.com">
+                        </div>
+                        <div class="form-group">
+                            <label>department</label>
+                            <select id="adminDept">
+                                <option>management</option>
+                                <option>development</option>
+                                <option>marketing</option>
+                                <option>design</option>
+                                <option>operations management</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>notification preferences</label>
+                            <select id="notifPref">
+                                <option>all reports</option>
+                                <option>pending only</option>
+                                <option>none</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="saveSettings()">save changes</button>
+                        <button class="btn" onclick="clearAllData()" style="background: var(--danger); margin-top: 1rem;">clear all data</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+        <!-- modal -->
+        <div id="reportModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 id="modal-name"></h2>
+                <div class="modal-info">
+                    <div class="modal-info-item">
+                        <strong>department:</strong>
+                        <span id="modal-dept"></span>
+                    </div>
+                    <div class="modal-info-item">
+                        <strong>timeline:</strong>
+                        <span id="modal-dates"></span>
+                    </div>
+                    <div class="modal-info-item">
+                        <strong>status:</strong>
+                        <span id="modal-status"></span>
+                    </div>
                 </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- modal -->
-    <div id="reportModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2 id="modal-name"></h2>
-            <div class="modal-info">
-                <div class="modal-info-item">
-                    <strong>department:</strong>
-                    <span id="modal-dept"></span>
+                <h3>Task details</h3>
+                <div id="modal-task" class="task-box"></div>
+                <div class="action-buttons" id="modal-actions">
+                    <button class="btn-approve" onclick="approveReport()">
+                        <i class="fas fa-check"></i>
+                        Approve
+                    </button>
+                    <button class="btn-reject" onclick="rejectReport()">
+                        <i class="fas fa-times"></i>
+                        Reject
+                    </button>
                 </div>
-                <div class="modal-info-item">
-                    <strong>timeline:</strong>
-                    <span id="modal-dates"></span>
-                </div>
-                <div class="modal-info-item">
-                    <strong>status:</strong>
-                    <span id="modal-status"></span>
-                </div>
-            </div>
-            <h3>Task details</h3>
-            <div id="modal-task" class="task-box"></div>
-            <div class="action-buttons" id="modal-actions">
-                <button class="btn-approve" onclick="approveReport()">
-                    <i class="fas fa-check"></i> Approve
-                </button>
-                <button class="btn-reject" onclick="rejectReport()">
-                    <i class="fas fa-times"></i> Reject
-                </button>
             </div>
         </div>
-    </div>
-
-    <script src="admin-script.js"></script>
-</body>
+        <script src="admin-script.js"></script>
+    </body>
 </html>

@@ -3,6 +3,23 @@ let allReports = [];
 let currentFilter = 'all';
 let currentReportId = null;
 let charts = {};
+let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+let allAssignTasks = [];
+
+// Pagination state
+let currentPage = {
+    reports: 1,
+    leaderboard: 1
+};
+const itemsPerPage = 10;
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkAdmin();
+    updateUserHeader();
+    loadData();
+    setupTaskForm();
+    initCharts(); 
+});
 
 // check if user is admin
 function checkAdmin() {
@@ -29,11 +46,20 @@ function loadData() {
     } else {
         allReports = [];
     }
+
+    if (localStorage.getItem('cpAssignedTasks')) {
+        allAssignTasks = JSON.parse(localStorage.getItem('cpAssignedTasks'));
+        allAssignTasks.forEach(t => t.submitDate = new Date(t.submitDate));
+    }
+    else{
+        allAssignTasks = [];
+    }
     updateUI();
 }
 
 function saveData() {
     localStorage.setItem('cpReports', JSON.stringify(allReports));
+    localStorage.setItem('cpAssignedTasks', JSON.stringify(allAssignTasks));
 }
 
 function showToast(msg, type = 'success') {
@@ -74,10 +100,6 @@ function handleLogout() {
     }
 }
 
-
-
-
-
 function addReport(name, dept, start, end, task, silent = false) {
     allReports.push({
         id: Date.now() + Math.random(),
@@ -94,37 +116,37 @@ function addReport(name, dept, start, end, task, silent = false) {
     if (!silent) showToast('report submitted successfully!', 'success');
 }
 
-// form submission
-document.addEventListener('DOMContentLoaded', () => {
-    checkAdmin();
-    loadData();
-    
-    const form = document.getElementById('submissionForm');
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('staffName').value;
-            const dept = document.getElementById('staffDept').value;
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
-            const task = document.getElementById('taskContent').value;
+function setupTaskForm() {
+    const assignform = document.getElementById('assignForm');
+    if (!assignform) return;
 
-            if (new Date(end) < new Date(start)) {
-                return showToast('end date must be after start date!', 'error');
-            }
+    assignform.addEventListener('submit', (e) => {
+        e.preventDefault();
 
-            addReport(name, dept, start, end, task);
-            form.reset();
-            showSection('analytics-view', document.querySelector('.nav-item'));
-        });
-    }
-    
-    initCharts();
-});
+        const newTask = {
+            id: Date.now() + Math.random(),
+            submitDate: new Date().toISOString(),
+            assigneeName: document.getElementById('assignName').value,
+            dept: document.getElementById('assignDept').value,
+            assignedDate: document.getElementById('assignedDate').value,
+            dueDate: document.getElementById('dueDate').value,
+            task: document.getElementById('assignTask').value,
+            status: 'Pending' 
+        };
+
+        allAssignTasks.push(newTask);
+        saveData();
+        assignform.reset();
+        
+        showToast('task assigned successfully!', 'success');
+        updateUI(); // This will update stats properly
+    });
+}
 
 // filtering functions
 function filterByTime(type) {
     currentFilter = type;
+    currentPage.reports = 1; // Reset to first page when filtering
     document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById(`filter-${type}`);
     if (btn) btn.classList.add('active');
@@ -132,16 +154,17 @@ function filterByTime(type) {
     updateUI();
 }
 
-
 // updating statistics
-function updateStats(data) {
+function updateStats() {
     const totalEl = document.getElementById('totalReports');
     const pendingEl = document.getElementById('pendingReports');
+    const totalTasksEl = document.getElementById('totalTasks');
     const activeEl = document.getElementById('activeEmployees');
     const weekEl = document.getElementById('thisWeek');
     
     if (totalEl) totalEl.textContent = allReports.length;
     if (pendingEl) pendingEl.textContent = allReports.filter(r => r.status === 'Pending').length;
+    if (totalTasksEl) totalTasksEl.textContent = allAssignTasks.length;
     if (activeEl) activeEl.textContent = new Set(allReports.map(r => r.name)).size;
 
     const weekAgo = new Date();
@@ -151,6 +174,7 @@ function updateStats(data) {
 
 function searchReports() {
     const term = document.getElementById('searchInput').value.toLowerCase();
+    currentPage.reports = 1; // Reset to first page when searching
     const filtered = getFiltered().filter(r =>
         r.name.toLowerCase().includes(term) || 
         r.dept.toLowerCase().includes(term) ||
@@ -185,7 +209,6 @@ function getFiltered() {
         monthAgo.setDate(monthAgo.getDate() - 30);
         return allReports.filter(r => r.submitDate >= monthAgo);
     }
-   
     
     return allReports;
 }
@@ -193,7 +216,7 @@ function getFiltered() {
 // ui update functions
 function updateUI() {
     const filtered = getFiltered();
-    updateStats(filtered);
+    updateStats();
     updateTable(filtered);
     updateCharts(filtered);
 }
@@ -206,7 +229,14 @@ function updateTable(data) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-light);">no reports found</td></tr>';
         return;
     }
-    tbody.innerHTML = data.map(r => `
+
+    // Pagination logic
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    const startIndex = (currentPage.reports - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
+
+    tbody.innerHTML = paginatedData.map(r => `
         <tr onclick="openReport(${r.id})">
             <td>${r.submitDate.toLocaleDateString()}</td>
             <td>${r.name}</td>
@@ -216,6 +246,54 @@ function updateTable(data) {
             <td><i class="fas fa-eye"></i></td>
         </tr>
     `).join('');
+
+    // Add pagination controls
+    addPaginationControls('report-rows', data.length, currentPage.reports, 'reports');
+}
+
+function addPaginationControls(tableId, totalItems, currentPageNum, type) {
+    const tbody = document.getElementById(tableId);
+    if (!tbody) return;
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (totalPages <= 1) return;
+
+    const paginationRow = document.createElement('tr');
+    paginationRow.innerHTML = `
+        <td colspan="6" style="text-align: center; padding: 20px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                <button onclick="changePage('${type}', ${currentPageNum - 1})" 
+                    ${currentPageNum === 1 ? 'disabled' : ''} 
+                    style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span style="font-weight: 600;">Page ${currentPageNum} of ${totalPages}</span>
+                <button onclick="changePage('${type}', ${currentPageNum + 1})" 
+                    ${currentPageNum === totalPages ? 'disabled' : ''} 
+                    style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </td>
+    `;
+    tbody.appendChild(paginationRow);
+}
+
+function changePage(type, newPage) {
+    const totalPages = type === 'reports' 
+        ? Math.ceil(getFiltered().length / itemsPerPage)
+        : Math.ceil(Object.keys(getTeamStats()).length / itemsPerPage);
+
+    if (newPage < 1 || newPage > totalPages) return;
+
+    currentPage[type] = newPage;
+    
+    if (type === 'reports') {
+        const filtered = getFiltered();
+        updateTable(filtered);
+    } else if (type === 'leaderboard') {
+        updateTeam();
+    }
 }
 
 // chart initialization
@@ -342,13 +420,18 @@ function updateCharts(data) {
 }
 
 // team view functions
-function updateTeam() {
+function getTeamStats() {
     const stats = {};
     allReports.forEach(r => {
         if (!stats[r.name]) stats[r.name] = { total: 0, approved: 0, dept: r.dept };
         stats[r.name].total++;
         if (r.status === 'Approved') stats[r.name].approved++;
     });
+    return stats;
+}
+
+function updateTeam() {
+    const stats = getTeamStats();
 
     let topName = '-', maxReports = 0;
     Object.keys(stats).forEach(name => {
@@ -379,12 +462,19 @@ function updateTeam() {
     const board = Object.keys(stats).map(name => ({ name, ...stats[name] })).sort((a, b) => b.total - a.total);
     const tbody = document.getElementById('leaderboard-rows');
     if (!tbody) return;
+
+    // Pagination for leaderboard
+    const totalPages = Math.ceil(board.length / itemsPerPage);
+    const startIndex = (currentPage.leaderboard - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedBoard = board.slice(startIndex, endIndex);
     
-    tbody.innerHTML = board.map((emp, i) => {
+    tbody.innerHTML = paginatedBoard.map((emp, i) => {
+        const actualRank = startIndex + i + 1;
         const perf = emp.total > 0 ? ((emp.approved / emp.total) * 100).toFixed(0) : 0;
         return `
             <tr>
-                <td>${i + 1}</td>
+                <td>${actualRank}</td>
                 <td>${emp.name}</td>
                 <td>${emp.dept}</td>
                 <td>${emp.total}</td>
@@ -400,6 +490,9 @@ function updateTeam() {
             </tr>
         `;
     }).join('');
+
+    // Add pagination controls for leaderboard
+    addPaginationControls('leaderboard-rows', board.length, currentPage.leaderboard, 'leaderboard');
 }
 
 // modal functions
@@ -514,7 +607,9 @@ function saveSettings() {
 function clearAllData() {
     if (confirm('are you sure you want to clear all data? this action cannot be undone!')) {
         localStorage.removeItem('cpReports');
+        localStorage.removeItem('cpAssignedTasks');
         allReports = [];
+        allAssignTasks = [];
         updateUI();
         showToast('all data cleared!', 'warning');
     }
@@ -524,4 +619,4 @@ function clearAllData() {
 window.onclick = (e) => {
     const modal = document.getElementById('reportModal');
     if (e.target === modal) closeModal();
-}; 
+};
