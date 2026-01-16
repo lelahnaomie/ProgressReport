@@ -9,7 +9,7 @@ let currentPage = {
     reports: 1,
     tasks: 1
 };
-const itemsPerPage = 10;
+const itemsPerPage = 5;
 
 document.addEventListener('DOMContentLoaded', () => {
     checkEmployee();
@@ -107,7 +107,7 @@ function updateReportsTable() {
     
     if (tbody) {
         if (myReports.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #888;">No reports submitted yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">No reports submitted yet.</td></tr>';
         } else {
             const sorted = [...myReports].sort((a, b) => b.id - a.id);
             
@@ -116,13 +116,14 @@ function updateReportsTable() {
             const endIndex = startIndex + itemsPerPage;
             const paginatedData = sorted.slice(startIndex, endIndex);
 
-            tbody.innerHTML = paginatedData.map(r => `
+            tbody.innerHTML = paginatedData.map((r, index)=> `
                 <tr onclick="openReport(${r.id})">
-                    <td>${new Date(r.submitDate).toLocaleDateString()}</td>
-                    <td>${r.start} to ${r.end}</td>
-                    <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
-                    <td><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
-                    <td><button class="view-btn" style='border: none; background: none; cursor:pointer'><i class="fas fa-eye"></i> View</button></td>
+                <td>${startIndex + index + 1}</td>
+                <td>${new Date(r.submitDate).toLocaleDateString()}</td>
+                <td>${r.start} to ${r.end}</td>
+                <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
+                <td><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
+                <td><button class="view-btn" style='border: none; background: none; cursor:pointer'><i class="fas fa-eye"></i> View</button></td>
                 </tr>
             `).join('');
 
@@ -187,13 +188,13 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
                 <button onclick="changePage('${type}', ${currentPageNum - 1})" 
                     ${currentPageNum === 1 ? 'disabled' : ''} 
                     style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
-                    <i class="fas fa-chevron-left"></i>
+                    <i class="fas fa-arrow-left"></i>
                 </button>
                 <span style="font-weight: 600;">Page ${currentPageNum} of ${totalPages}</span>
                 <button onclick="changePage('${type}', ${currentPageNum + 1})" 
                     ${currentPageNum === totalPages ? 'disabled' : ''} 
                     style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
-                    <i class="fas fa-chevron-right"></i>
+                    <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </td>
