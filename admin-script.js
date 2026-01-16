@@ -25,7 +25,7 @@ function checkAdmin() {
     const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
     if (user.role !== 'admin') {
         alert('access denied. admin only.');
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
     }
 }
 
@@ -95,7 +95,7 @@ function handleLogout() {
         localStorage.removeItem('loginTime');
         localStorage.removeItem('currentUser');
         showToast('logged out successfully', 'success');
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
     }
 }
 

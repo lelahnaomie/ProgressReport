@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkEmployee() {
     if (!currentUser || currentUser.role !== 'employee') {
         alert('Access denied. Employees only.');
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
     }
 }
 
@@ -270,7 +270,7 @@ function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('currentUser');
         localStorage.removeItem('isLoggedIn');
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
     }
 }
 

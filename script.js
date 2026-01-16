@@ -67,7 +67,7 @@ function handleLogout() {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('loginTime');
         showToast('logged out successfully', 'success');
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
     }
 }
 
