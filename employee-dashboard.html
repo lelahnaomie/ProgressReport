@@ -14,16 +14,34 @@
                 <div class="user-info-container">
                     <span class="username-display">
                         <i class="fas fa-user"></i>
-                        <span id="headerUsername">User</span>
+                        <span id="headerUsername">Admin</span>
                     </span>
-                    <button class="profile-icon-btn" onclick="showSection('profile-view', document.querySelectorAll('.nav-item')[3])">
-                        <i class="fas fa-user-circle"></i>
-                    </button>
+                    <div class="dropdown">
+                        <button class="profile-icon-btn" onclick="toggleDropdown()">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div class="dropdown-menu" id="profileDropdown">
+                            <a onclick="showSection('profile-view', document.querySelector('.nav-item:nth-child(5)')); toggleDropdown();">
+                                <i class="fas fa-user"></i>
+                                <span>Profile</span>
+                            </a>
+                            <a onclick="showSection('settings-view', document.querySelector('.nav-item:nth-child(5)')); toggleDropdown();">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </a>
+                            <a id="log-btn" onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                                <div id="loading-spinner" class="hidden">Loading...</div>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <h2>Customer
+                    <h2>
+                        Customer
                         <span>Pull</span>
                     </h2>
                 </div>
@@ -33,7 +51,7 @@
                         <span>My reports</span>
                     </div>
                     <div class="nav-item" onclick="showSection('empAssign-view',this)">
-                        <i class="fas fa-edit"></i>
+                        <i class="fa-chisel fa-regular fa-newspaper"></i>
                         <span>Assigned Tasks</span>
                     </div>
                     <div class="nav-item" onclick="showSection('submit-view', this)">
@@ -56,123 +74,127 @@
                     </button>
                 </div>
             </aside>
-            <main class="main-content">
-                <!-- my reports section -->
-                <section id="my-reports-view">
-                    <div class="content-header">
-                        <h1>My reports</h1>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon green">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div class="stat-details">
-                                <h3 id="myTotalReports">0</h3>
-                                <p>Total submitted</p>
-                            </div>
+            <button class="mobile-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="dashboard-wrapper">
+                <main class="main-content">
+                    <!-- my reports section -->
+                    <section id="my-reports-view">
+                        <div class="content-header">
+                            <h1>My reports</h1>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-icon blue">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="stat-details">
-                                <h3 id="myApproved">0</h3>
-                                <p>Approved</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon yellow">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="stat-details">
-                                <h3 id="myPending">0</h3>
-                                <p>Pending</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon red">
-                                <i class="fas fa-times-circle"></i>
-                            </div>
-                            <div class="stat-details">
-                                <h3 id="myRejected">0</h3>
-                                <p>Rejected</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="table-card">
-                        <h3>Submission History</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Id</th>
-                                    <th>date submitted</th>
-                                    <th>period</th>
-                                    <th>task summary</th>
-                                    <th>status</th>
-                                    <th>action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="my-reports-rows"></tbody>
-                        </table>
-                    </div>
-                </section>
-                <!-- submit report section -->
-                <section id="submit-view" style="display:none;">
-                    <div class="content-header">
-                        <h1>submit work report</h1>
-                    </div>
-                    <div class="standard-form">
-                        <h2>Progress report</h2>
-                        <form id="submissionForm">
-                            <input
-                                type="text"
-                                id="staffName"
-                                placeholder="full name"
-                                required
-                            >
-                            <select id="staffDept" required>
-                                <option value="">select department</option>
-                                <option value="Development">development</option>
-                                <option value="Marketing">marketing</option>
-                                <option value="Operations Management">operations management</option>
-                                <option value="Design">design</option>
-                            </select>
-                            <div class="date-row">
-                                <div class="group">
-                                    <label>start date</label>
-                                    <input type="date" id="startDate" required>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon green">
+                                    <i class="fas fa-file-alt"></i>
                                 </div>
-                                <div class="group">
-                                    <label>end date</label>
-                                    <input type="date" id="endDate" required>
+                                <div class="stat-details">
+                                    <h3 id="myTotalReports">0</h3>
+                                    <p>Total submitted</p>
                                 </div>
                             </div>
-                            <textarea
-                                id="taskContent"
-                                placeholder="describe the tasks completed during this period..."
-                                rows="6"
-                                required
-                            ></textarea>
-                            <button type="submit" class="btn">submit report</button>
-                        </form>
-                    </div>
-                </section>
-                <!-- Assigned Tasks section -->
-                <section id="empAssign-view" style="display: none;">
-                    <div class="content-header">
-                        <h1>Assigned Tasks</h1>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon green">
-                                <i class="fas fa-file-alt"></i>
+                            <div class="stat-card">
+                                <div class="stat-icon blue">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="myApproved">0</h3>
+                                    <p>Approved</p>
+                                </div>
                             </div>
-                            <div class="stat-details">
-                                <h3 id="totalTasks">2</h3>
-                                <p>Total tasks</p>
+                            <div class="stat-card">
+                                <div class="stat-icon yellow">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="myPending">0</h3>
+                                    <p>Pending</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon red">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="myRejected">0</h3>
+                                    <p>Rejected</p>
+                                </div>
                             </div>
                         </div>
+                        <div class="table-card">
+                            <h3>Submission History</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>date submitted</th>
+                                        <th>period</th>
+                                        <th>task summary</th>
+                                        <th>status</th>
+                                        <th>action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="my-reports-rows"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <!-- submit report section -->
+                    <section id="submit-view" style="display:none;">
+                        <div class="content-header">
+                            <h1>submit work report</h1>
+                        </div>
+                        <div class="standard-form">
+                            <h2>Progress report</h2>
+                            <form id="submissionForm">
+                                <input
+                                    type="text"
+                                    id="staffName"
+                                    placeholder="full name"
+                                    required
+                                >
+                                <select id="staffDept" required>
+                                    <option value="">select department</option>
+                                    <option value="Development">development</option>
+                                    <option value="Marketing">marketing</option>
+                                    <option value="Operations Management">operations management</option>
+                                    <option value="Design">design</option>
+                                </select>
+                                <div class="date-row">
+                                    <div class="group">
+                                        <label>start date</label>
+                                        <input type="date" id="startDate" required>
+                                    </div>
+                                    <div class="group">
+                                        <label>end date</label>
+                                        <input type="date" id="endDate" required>
+                                    </div>
+                                </div>
+                                <textarea
+                                    id="taskContent"
+                                    placeholder="describe the tasks completed during this period..."
+                                    rows="6"
+                                    required
+                                ></textarea>
+                                <button type="submit" class="btn">submit report</button>
+                            </form>
+                        </div>
+                    </section>
+                    <!-- Assigned Tasks section -->
+                    <section id="empAssign-view" style="display: none;">
+                        <div class="content-header">
+                            <h1>Assigned Tasks</h1>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon green">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="totalTasks">2</h3>
+                                    <p>Total tasks</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="table-card">
                             <h3>All tasks assigned</h3>

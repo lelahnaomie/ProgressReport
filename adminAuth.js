@@ -75,7 +75,6 @@ function findByEmail(email) {
     }
 }
 
-// Handle login function
 //loading state
 function setLoading(form, isLoading) {
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -119,14 +118,12 @@ function handleLogin(e) {
     localStorage.setItem('currentUser', JSON.stringify({
         email: user.email,
         name: user.name,
-        role: user.role,
-        dept: user.dept || ''
     }));
 
     showToast(`Welcome back ${user.name}!`, 'success');
 
     setTimeout(() => {
-        window.location.href = user.role === 'admin' ? 'admin-dashboard.html' : 'employee-dashboard.html';
+        window.location.href = 'admin-dashboard.html';
     }, 1500);
 }
 
@@ -181,9 +178,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (user.role) {
                 if (user.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
-                } else {
-                    window.location.href = 'employee-dashboard.html';
-                }
+                } 
             }
         } catch (error) {
             console.error('Error parsing user data:', error);

@@ -3,6 +3,7 @@ let allReports = [];
 let allAssignTasks = []; 
 let currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 let currentReportId = null;
+let currentTaskId = null;
 
 // Pagination state
 let currentPage = {
@@ -10,6 +11,36 @@ let currentPage = {
     tasks: 1
 };
 const itemsPerPage = 5;
+
+const logBtn = document.getElementById('log-btn');
+const loadingSpinner = document.getElementById('loading-spinner');
+const contentDiv = document.getElementById('content');
+
+function setLoading(isLoading, btn, customText = "Loading...") {
+    const globalSpinner = document.getElementById('loading-spinner');
+    
+    // 1. Handle Global Spinner
+    if (globalSpinner) {
+        if (isLoading) globalSpinner.classList.remove('hidden');
+        else globalSpinner.classList.add('hidden');
+    }
+
+    // 2. Handle the Button
+    if (btn) {
+        if (isLoading) {
+            btn.disabled = true;
+            btn.classList.add('btn-loading');
+            // Store original text so we don't lose it
+            if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${customText}`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+            delete btn.dataset.originalText;
+        }
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     checkEmployee();
@@ -33,6 +64,45 @@ function updateUserHeader() {
     }
 }
 
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('show');
+ 
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', toggleSidebar);
+    }
+    overlay.classList.toggle('show');
+}
+
+
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            toggleSidebar();
+        }
+    });
+});
+
+// Toggle dropdown menu
+function toggleDropdown() {
+    const dropdown = document.getElementById('profileDropdown');
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    }
+});
+
 // Data Management
 function loadData() {
     const storedReports = localStorage.getItem('cpReports');
@@ -46,7 +116,12 @@ function loadData() {
     const storedTasks = localStorage.getItem('cpAssignedTasks');
     if (storedTasks) {
         allAssignTasks = JSON.parse(storedTasks);
-        allAssignTasks.forEach(t => t.submitDate = new Date(t.submitDate));
+        allAssignTasks.forEach(t => {
+            t.submitDate = new Date(t.submitDate);
+            // Initialize progress tracking if not exists
+            if (!t.progress) t.progress = 0;
+            if (!t.updates) t.updates = [];
+        });
     } else {
         allAssignTasks = [];
     }
@@ -59,6 +134,10 @@ function saveData() {
     localStorage.setItem('cpReports', JSON.stringify(allReports));
 }
 
+function saveTaskData() {
+    localStorage.setItem('cpAssignedTasks', JSON.stringify(allAssignTasks));
+}
+
 function setupEventListeners() {
     const form = document.getElementById('submissionForm');
     if (form) {
@@ -68,6 +147,10 @@ function setupEventListeners() {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             
+            // Get the submit button inside this specific form
+            const submitBtn = form.querySelector('button[type="submit"]');
+            setLoading(true, submitBtn, "Submitting...");
+
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
             const task = document.getElementById('taskContent').value;
@@ -75,27 +158,32 @@ function setupEventListeners() {
             const name = nameField ? nameField.value : currentUser.name;
 
             if (new Date(end) < new Date(start)) {
+                setLoading(false, submitBtn);
                 return showToast('End date must be after start date!', 'error');
             }
 
-            const newReport = {
-                id: Date.now() + Math.random(),
-                submitDate: new Date().toISOString(),
-                name: name,
-                dept: dept,
-                start: start,
-                end: end,
-                task: task,
-                status: 'Pending'
-            };
+            // Artificial delay to show the loading state
+            setTimeout(() => {
+                const newReport = {
+                    id: Date.now() + Math.random(),
+                    submitDate: new Date().toISOString(),
+                    name: name,
+                    dept: dept,
+                    start: start,
+                    end: end,
+                    task: task,
+                    status: 'Pending'
+                };
 
-            allReports.push(newReport);
-            saveData();
-            form.reset();
-            
-            showToast('Report submitted successfully!', 'success');
-            loadData(); 
-            showSection('my-reports-view', document.querySelector('[onclick*="my-reports-view"]'));
+                allReports.push(newReport);
+                saveData();
+                form.reset();
+                
+                setLoading(false, submitBtn);
+                showToast('Report submitted successfully!', 'success');
+                loadData(); 
+                showSection('my-reports-view', document.querySelector('[onclick*="my-reports-view"]'));
+            }, 800);
         });
     }
 }
@@ -154,20 +242,33 @@ function updateTaskTable() {
         const endIndex = startIndex + itemsPerPage;
         const paginatedData = sorted.slice(startIndex, endIndex);
 
-        tbody.innerHTML = paginatedData.map(t => `
-            <tr>
-                <td>${new Date(t.submitDate).toLocaleDateString()}</td>
-                <td>${t.assigneeName}</td>
-                <td>${t.dept}</td>
-                <td class="task-cell">${t.task}</td>
-                <td><span class="status-badge ${t.status.toLowerCase()}">${t.status}</span></td>
-                <td><button class="view-btn" onclick="openTaskModal(${t.id})" style='border: none; background: none; cursor:pointer'><i class="fas fa-eye"></i> View</button></td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = paginatedData.map(t => {
+            const progress = t.progress || 0;
+            const progressColor = progress >= 75 ? '#27ae60' : 
+                                  progress >= 50 ? '#f39c12' : '#e74c3c';
+            
+            return `
+                <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
+                    <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
+                    <td>${t.assigneeName}</td>
+                    <td>${t.dept}</td>
+                    <td class="task-cell">${t.task.substring(0, 30)}${t.task.length > 30 ? '...' : ''}</td>
+                    <td>
+                        <span class="status-badge ${t.status.toLowerCase()}">${t.status}</span>
+                        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                            <div style="flex: 1; background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
+                                <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease;"></div>
+                            </div>
+                            <span style="font-size: 0.75rem; color: #666; min-width: 35px;">${progress}%</span>
+                        </div>
+                    </td>
+                    <td><i class="fas fa-eye"></i></td>
+                </tr>
+            `;
+        }).join('');
 
         addPaginationControls('task-row', sorted.length, currentPage.tasks, 'tasks');
     }
-
 
     updateCounter('totalTasks', myTasks.length);
 }
@@ -180,7 +281,7 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
     if (totalPages <= 1) return;
 
     const paginationRow = document.createElement('tr');
-    const colspan = type === 'reports' ? '5' : '6';
+    const colspan = type === 'reports' ? '6' : '6';
     
     paginationRow.innerHTML = `
         <td colspan="${colspan}" style="text-align: center; padding: 20px;">
@@ -203,24 +304,24 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
 }
 
 function changePage(type, newPage) {
-    const myReports = allReports.filter(r => r.name === currentUser.name);
-    const myTasks = allAssignTasks.filter(t => t.assigneeName === currentUser.name);
-    
-    const totalPages = type === 'reports' 
-        ? Math.ceil(myReports.length / itemsPerPage)
-        : Math.ceil(myTasks.length / itemsPerPage);
+    setLoading(true);
 
-    if (newPage < 1 || newPage > totalPages) return;
+    setTimeout(() => {
+        const myReports = allReports.filter(r => r.name === currentUser.name);
+        const myTasks = allAssignTasks.filter(t => t.assigneeName === currentUser.name);
+        
+        const totalPages = type === 'reports' 
+            ? Math.ceil(myReports.length / itemsPerPage)
+            : Math.ceil(myTasks.length / itemsPerPage);
 
-    currentPage[type] = newPage;
-    
-    if (type === 'reports') {
-        updateReportsTable();
-    } else if (type === 'tasks') {
-        updateTaskTable();
-    }
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage[type] = newPage;
+            if (type === 'reports') updateReportsTable();
+            else if (type === 'tasks') updateTaskTable();
+        }
+        setLoading(false);
+    }, 400);
 }
-
 function updateCounter(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
@@ -252,6 +353,147 @@ function openReport(id) {
     document.getElementById('reportModal').style.display = 'block';
 }
 
+// Open task modal with progress update capability
+function openTaskModal(taskId) {
+    currentTaskId = taskId;
+    const task = allAssignTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Initialize tracking if not exists
+    if (!task.progress) task.progress = 0;
+    if (!task.updates) task.updates = [];
+
+    const modal = document.getElementById('reportModal');
+    const modalContent = modal.querySelector('.modal-content');
+    
+    const progressColor = task.progress >= 75 ? '#27ae60' : 
+                          task.progress >= 50 ? '#f39c12' : '#e74c3c';
+    
+    // Check if task is completed
+    const isCompleted = task.status === 'Completed' || task.progress === 100;
+    
+    modalContent.innerHTML = `
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>${task.assigneeName}</h2>
+        
+        <div class="modal-info">
+            <div class="modal-info-item">
+                <strong>department:</strong>
+                <span>${task.dept}</span>
+            </div>
+            <div class="modal-info-item">
+                <strong>assigned:</strong>
+                <span>${new Date(task.assignedDate).toLocaleDateString()}</span>
+            </div>
+            <div class="modal-info-item">
+                <strong>due date:</strong>
+                <span>${new Date(task.dueDate).toLocaleDateString()}</span>
+            </div>
+            <div class="modal-info-item">
+                <strong>status:</strong>
+                <span class="status-badge ${task.status.toLowerCase()}">${task.status}</span>
+            </div>
+        </div>
+        
+        <h3>Task Details</h3>
+        <div class="task-box">${task.task}</div>
+        
+        <h3>Your Progress</h3>
+        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <span style="font-weight: 600;">Current Progress:</span>
+                <span style="font-weight: 600; color: ${progressColor}; font-size: 1.2rem;">${task.progress}%</span>
+            </div>
+            
+            <div style="background: #e0e0e0; height: 30px; border-radius: 15px; overflow: hidden; margin-bottom: 20px;">
+                <div style="width: ${task.progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    ${task.progress > 15 ? task.progress + '%' : ''}
+                </div>
+            </div>
+            
+            ${!isCompleted ? `
+                <label style="display: block; margin-bottom: 10px; font-weight: 600;">Update Your Progress:</label>
+                <input type="range" id="progressSlider" min="0" max="100" value="${task.progress}" 
+                    style="width: 100%; height: 8px; margin-bottom: 10px; cursor: pointer;"
+                    oninput="document.getElementById('progressValue').textContent = this.value + '%'">
+                
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <span id="progressValue" style="font-size: 1.1rem; font-weight: 600; color: ${progressColor};">${task.progress}%</span>
+                </div>
+                
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Progress Note (Optional):</label>
+                <textarea id="progressNote" 
+                    placeholder="Add a note about your progress..."
+                    rows="3"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; font-family: inherit;"></textarea>
+                
+                <button class="btn" onclick="updateMyProgress(${task.id})" style="width: 100%;">
+                    <i class="fas fa-save"></i> Update My Progress
+                </button>
+            ` : `
+                <div style="text-align: center; padding: 20px; background: #d4edda; border-radius: 8px; color: #155724;">
+                    <i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p style="margin: 0; font-weight: 600;">Task Completed!</p>
+                </div>
+            `}
+        </div>
+
+        ${task.updates && task.updates.length > 0 ? `
+            <h3>Progress History</h3>
+            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white;">
+                ${task.updates.map(update => `
+                    <div style="padding: 12px; border-left: 4px solid #149648; background: #f8f9fa; margin-bottom: 12px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong style="color: #149648; font-size: 1.1rem;">${update.progress}%</strong>
+                            <span style="color: #666; font-size: 0.85rem;">${new Date(update.date).toLocaleString()}</span>
+                        </div>
+                        ${update.note ? `<p style="margin: 5px 0 0 0; color: #555;">${update.note}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        ` : '<p style="color: #999; text-align: center; padding: 20px;">No progress updates yet</p>'}
+    `;
+
+    modal.style.display = 'block';
+}
+
+// Update employee's own task progress
+function updateMyProgress(taskId) {
+    const task = allAssignTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newProgress = parseInt(document.getElementById('progressSlider').value);
+    const noteField = document.getElementById('progressNote');
+    const note = noteField ? noteField.value.trim() : '';
+    
+    // Update progress
+    task.progress = newProgress;
+    
+    // Add to history
+    task.updates = task.updates || [];
+    task.updates.unshift({
+        progress: newProgress,
+        date: new Date().toISOString(),
+        note: note || `Progress updated to ${newProgress}% by ${currentUser.name}`
+    });
+
+    // Auto-update status based on progress
+    if (newProgress === 100) {
+        task.status = 'Completed';
+    } else if (newProgress > 0) {
+        task.status = 'In Progress';
+    } else {
+        task.status = 'Pending';
+    }
+
+    saveTaskData();
+    updateTaskTable();
+    showToast('Your progress has been updated!', 'success');
+    
+    // Refresh the modal to show updated data
+    openTaskModal(taskId);
+}
+
 function closeModal() {
     const modal = document.getElementById('reportModal');
     if (modal) modal.style.display = 'none';
@@ -261,25 +503,76 @@ function closeModal() {
 function showToast(msg, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span class="toast-message">${msg}</span>`;
+    const iconMap = {
+        success: 'check-circle',
+        error: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle'
+    };
+    toast.innerHTML = `
+        <i class="fas fa-${iconMap[type]}"></i>
+        <span class="toast-message">${msg}</span>
+    `;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('isLoggedIn');
-        window.location.href = 'index.html';
+        const logoutBtn = document.getElementById('log-btn');
+        // Pass the specific ID and a custom message
+        setLoading(true, logoutBtn, "Logging out...");
+        
+        setTimeout(() => {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }, 1000);
     }
 }
 
-// Placeholder for task modal if needed
-function openTaskModal(taskId) {
-    const task = allAssignTasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    alert(`Task: ${task.task}\nStatus: ${task.status}\nDue: ${task.dueDate}`);
+// Profile functions
+function saveProfile() {
+    const saveBtn = document.querySelector('#profile-view .btn');
+    setLoading(true, saveBtn, "Saving...");
+
+    setTimeout(() => {
+        const name = document.getElementById('profileName').value;
+        const email = document.getElementById('profileEmail').value;
+        const dept = document.getElementById('profileDept').value;
+        const phone = document.getElementById('profilePhone').value;
+
+        currentUser.name = name;
+        currentUser.email = email;
+        currentUser.dept = dept;
+        currentUser.phone = phone;
+
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        const users = JSON.parse(localStorage.getItem('cpUsers') || '[]');
+        const userIndex = users.findIndex(u => u.email === currentUser.email);
+        if (userIndex !== -1) {
+            users[userIndex] = currentUser;
+            localStorage.setItem('cpUsers', JSON.stringify(users));
+        }
+
+        updateUserHeader();
+        setLoading(false, saveBtn);
+        showToast('Profile updated successfully!', 'success');
+    }, 1000);
+}
+function saveSettings() {
+    const emailNotif = document.getElementById('emailNotif').value;
+    const reminderPref = document.getElementById('reminderPref').value;
+    const langPref = document.getElementById('langPref').value;
+
+    const settings = {
+        emailNotif,
+        reminderPref,
+        langPref
+    };
+
+    localStorage.setItem('employeeSettings', JSON.stringify(settings));
+    showToast('Settings saved successfully!', 'success');
 }
 
 window.onclick = (e) => {

@@ -20,14 +20,27 @@
                         <i class="fas fa-user"></i>
                         <span id="headerUsername">Admin</span>
                     </span>
-                    <button class="profile-icon-btn" onclick="showSection('settings-view', document.querySelectorAll('.nav-item')[3])">
-                        <i class="fas fa-user-circle"></i>
-                    </button>
+                    <div class="dropdown">
+                        <button class="profile-icon-btn" onclick="toggleDropdown()">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div class="dropdown-menu" id="profileDropdown">
+                            <a onclick="showSection('settings-view', document.querySelector('.nav-item:nth-child(5)')); toggleDropdown();">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </a>
+                            <a onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <h2>Customer
+                    <h2>
+                        Customer
                         <span>Pull</span>
                     </h2>
                     <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">admin panel</p>
@@ -38,8 +51,12 @@
                         <span>Analytics</span>
                     </div>
                     <div class="nav-item" onclick="showSection('assign-view',this)">
-                        <i class="fas fa-edit"></i>
+                        <i class="fa fa-pencil-square"></i>
                         <span>Assign Tasks</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('task-view',this)">
+                        <i class="fas fa-edit"></i>
+                        <span>Assigned Tasks</span>
                     </div>
                     <div class="nav-item" onclick="showSection('team-view', this)">
                         <i class="fas fa-users"></i>
@@ -83,7 +100,7 @@
                                 <p>Total reports</p>
                             </div>
                         </div>
-                           <div class="stat-card">
+                        <div class="stat-card">
                             <div class="stat-icon blue">
                                 <i class="fas fa-clock"></i>
                             </div>
@@ -150,7 +167,6 @@
                         <table>
                             <thead>
                                 <tr>
-                                    
                                     <th class="id-cell">Id</th>
                                     <th class="date-cell">Date</th>
                                     <th class="name-cell">Employee Name</th>
@@ -162,9 +178,7 @@
                             </thead>
                             <tbody id="report-rows"></tbody>
                         </table>
-                        <div id="pagination">
-                            
-                        </div>
+                        <div id="pagination"></div>
                     </div>
                 </section>
                 <!-- assigning tasks section -->
@@ -206,6 +220,38 @@
                             ></textarea>
                             <button type="submit" class="btn">assign task</button>
                         </form>
+                    </div>
+                </section>
+                <section id="task-view" style="display: none;">
+                    <div class="content-header">
+                        <h1>Assigned Tasks</h1>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="totalTasks"></h3>
+                                <p>Total tasks</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <h3>All tasks assigned</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Assigned date</th>
+                                    <th>Assignee</th>
+                                    <th>department</th>
+                                    <th>Task</th>
+                                    <th>status</th>
+                                    <th>action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="task-row"></tbody>
+                        </table>
                     </div>
                 </section>
                 <!-- team overview section -->
@@ -276,17 +322,7 @@
                         </div>
                         <div class="form-group">
                             <label>email address</label>
-                            <input type="email" id="adminEmail" value="admin@customerpull.com">
-                        </div>
-                        <div class="form-group">
-                            <label>department</label>
-                            <select id="adminDept">
-                                <option>management</option>
-                                <option>development</option>
-                                <option>marketing</option>
-                                <option>design</option>
-                                <option>operations management</option>
-                            </select>
+                            <input type="email" id="adminEmail" value="">
                         </div>
                         <div class="form-group">
                             <label>notification preferences</label>
