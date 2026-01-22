@@ -1,13 +1,12 @@
 import { createClient } from "@libsql/client";
 
 export default async function handler(req, res) {
-  // Add CORS headers if needed
+  // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -16,9 +15,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Get email and password FIRST
   const { email, password } = req.body;
 
-  // Now you can log safely
+  // NOW you can safely log it
   console.log("Login attempt for:", email);
 
   // Validate input
@@ -27,11 +27,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Create database client
     const client = createClient({
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
 
+    // Query the database
     const result = await client.execute({
       sql: "SELECT * FROM users WHERE email = ? AND password = ? LIMIT 1",
       args: [email, password]
@@ -40,18 +42,23 @@ export default async function handler(req, res) {
     if (result.rows.length > 0) {
       const user = result.rows[0];
       
-      // Don't send password back to client
-      delete user.password;
+      // Don't send password back to client (security)
+      const { password: _, ...userWithoutPassword } = user;
       
-      res.status(200).json({ 
+      return res.status(200).json({ 
         message: "Login successful", 
-        user: user 
+        user: userWithoutPassword 
       });
     } else {
-      res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ 
+        error: "Invalid email or password" 
+      });
     }
   } catch (e) {
     console.error("Database error:", e);
-    res.status(500).json({ error: "Server error occurred" });
+    return res.status(500).json({ 
+      error: "Server error occurred",
+      details: e.message 
+    });
   }
 }
