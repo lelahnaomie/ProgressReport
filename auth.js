@@ -1,6 +1,30 @@
 // Storage key constants
 const REGISTERED_USERS_KEY = 'cpUsers';
 
+// Hardcoded admin credentials
+const ADMIN_EMAIL = 'admin@customerpull.com';
+const ADMIN_PASSWORD = '12345admin';
+const ADMIN_NAME = 'Admin';
+
+// Generate a simple hash for role verification
+function generateRoleToken(email, role) {
+    const timestamp = Date.now();
+    const randomPart = Math.random().toString(36).substring(7);
+    const hash = btoa(`${email}:${role}:${timestamp}:${randomPart}`);
+    return hash;
+}
+
+// Verify role token
+function verifyRoleToken(email, role, token) {
+    try {
+        const decoded = atob(token);
+        const parts = decoded.split(':');
+        return parts[0] === email && parts[1] === role;
+    } catch {
+        return false;
+    }
+}
+
 // Notification function
 function showToast(msg, type = 'success') {
     const toast = document.createElement('div');
@@ -32,7 +56,7 @@ function toggleAuth() {
     }
 }
 
-// Function to get registered users from localStorage
+// Function to get registered users
 function getRegisteredUsers() {
     try {
         const users = localStorage.getItem(REGISTERED_USERS_KEY);
@@ -47,7 +71,7 @@ function getRegisteredUsers() {
     }
 }
 
-// Function to save users to localStorage
+// Function to save users 
 function saveRegisteredUsers(users) {
     try {
         if (!Array.isArray(users)) {
@@ -75,8 +99,7 @@ function findByEmail(email) {
     }
 }
 
-// Handle login function
-//loading state
+// Loading state
 function setLoading(form, isLoading) {
     const submitBtn = form.querySelector('button[type="submit"]');
     if (!submitBtn) return;
@@ -99,23 +122,45 @@ function setLoading(form, isLoading) {
 function handleLogin(e) {
     e.preventDefault();
     const form = e.target;
-    
-    // Start Loading
+
     setLoading(form, true);
 
     const email = form.querySelector('input[type="email"]').value;
     const password = form.querySelector('input[type="password"]').value;
 
-    const user = findByEmail(email);
-    
-    if (!user || user.password !== password) {
-        showToast(!user ? 'Account not found.' : 'Incorrect password.', 'error');
-        setLoading(form, false); 
+    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
+
+        const roleToken = generateRoleToken(ADMIN_EMAIL, 'admin');
+
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('roleToken', roleToken);
+        localStorage.setItem('currentUser', JSON.stringify({
+            email: ADMIN_EMAIL,
+            name: ADMIN_NAME,
+            role: 'admin',
+            dept: 'Administration'
+        }));
+
+        showToast(`Welcome back ${ADMIN_NAME}!`, 'success');
+
+        setTimeout(() => {
+            window.location.href = 'admin-dashboard.html';
+        }, 1500);
         return;
     }
 
-    // Set login state 
+    const user = findByEmail(email);
+
+    if (!user || user.password !== password) {
+        showToast(!user ? 'Account not found.' : 'Incorrect password.', 'error');
+        setLoading(form, false);
+        return;
+    }
+
+    const roleToken = generateRoleToken(user.email, user.role);
+
     localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('roleToken', roleToken);
     localStorage.setItem('currentUser', JSON.stringify({
         email: user.email,
         name: user.name,
@@ -126,12 +171,11 @@ function handleLogin(e) {
     showToast(`Welcome back ${user.name}!`, 'success');
 
     setTimeout(() => {
-        window.location.href = user.role === 'admin' ? 'admin-dashboard.html' : 'employee-dashboard.html';
+        window.location.href = 'employee-dashboard.html';
     }, 1500);
 }
 
-// Handle signup function
-function handleSignup(e) {
+async function handleSignup(e) {
     e.preventDefault();
     const form = e.target;
 
@@ -140,65 +184,117 @@ function handleSignup(e) {
     const name = form.querySelector('input[type="text"]').value;
     const email = form.querySelector('input[type="email"]').value;
     const password = form.querySelector('input[type="password"]').value;
-    const role = form.querySelector('select[name="role"]').value;
-
-    const existingUser = findByEmail(email);
-    if (existingUser) {
-        showToast('Account already exists.', 'error');
-        setLoading(form, false); 
-        setTimeout(() => toggleAuth(), 1000);
-        return;
-    }
-
-    if (password.length < 6) {
-        showToast('Password too short.', 'error');
+    
+    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        showToast('Please use a different email.', 'error');
         setLoading(form, false);
         return;
     }
 
-    //
-    const users = getRegisteredUsers();
-    users.push({ name, email, password, role, dept: '', createdAt: new Date().toISOString() });
-    saveRegisteredUsers(users);
+    if (password.length < 6) {
+        showToast('Password too short (minimum 6 characters).', 'error');
+        setLoading(form, false);
+        return;
+    }
 
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('currentUser', JSON.stringify({ name, email, role, dept: '' }));
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, password })
+        });
 
-    showToast(`Welcome ${name}!`, 'success');
+        const result = await response.json();
 
-    setTimeout(() => {
-        window.location.href = role === 'admin' ? 'admin-dashboard.html' : 'employee-dashboard.html';
-    }, 1500);
+        if (response.ok) {
+            showToast(`Welcome ${name}! Please log in.`, 'success');
+            
+            setTimeout(() => {
+                toggleAuth(); 
+                setLoading(form, false);
+            }, 1500);
+        } else {
+            showToast(result.error || 'Registration failed', 'error');
+            setLoading(form, false);
+        }
+
+    } catch (error) {
+        console.error("Connection error:", error);
+        showToast('Could not connect to the server.', 'error');
+        setLoading(form, false);
+    }
 }
-// Check if user is already logged in on page load
+// Verify user access 
+function verifyAccess(requiredRole) {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const userStr = localStorage.getItem('currentUser');
+    const roleToken = localStorage.getItem('roleToken');
+
+    if (isLoggedIn !== 'true' || !userStr || !roleToken) {
+        window.location.href = 'index.html';
+        return false;
+    }
+
+    try {
+        const user = JSON.parse(userStr);
+
+        // Verify role
+        if (!verifyRoleToken(user.email, user.role, roleToken)) {
+            localStorage.clear();
+            window.location.href = 'index.html';
+            return false;
+        }
+        //check users role
+        if (user.role !== requiredRole) {
+            showToast('Access denied.', 'error');
+            setTimeout(() => {
+                window.location.href = user.role === 'admin' ? 'admin-dashboard.html' : 'employee-dashboard.html';
+            }, 1500);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Access verification failed:', error);
+        localStorage.clear();
+        window.location.href = 'index.html';
+        return false;
+    }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userStr = localStorage.getItem('currentUser');
-    
-    if (isLoggedIn === 'true' && userStr) {
+    const roleToken = localStorage.getItem('roleToken');
+
+    if (isLoggedIn === 'true' && userStr && roleToken) {
         try {
             const user = JSON.parse(userStr);
-            if (user.role) {
+
+            if (verifyRoleToken(user.email, user.role, roleToken)) {
                 if (user.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
                 } else {
                     window.location.href = 'employee-dashboard.html';
                 }
+            } else {
+                localStorage.clear();
             }
         } catch (error) {
             console.error('Error parsing user data:', error);
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('isLoggedIn');
+            localStorage.clear();
         }
     }
 });
 
-// Debug function
-function debugStorage() {
-    console.log('All registered users:', getRegisteredUsers());
-    console.log('Current user:', localStorage.getItem('currentUser'));
-    console.log('Is logged in:', localStorage.getItem('isLoggedIn'));
+// Logout function
+function logout() {
+    localStorage.clear();
+    showToast('Logged out successfully', 'success');
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1000);
 }
 
-// Expose debug function to window
-window.debugStorage = debugStorage;

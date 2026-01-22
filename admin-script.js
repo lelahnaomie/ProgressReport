@@ -15,6 +15,32 @@ let currentPage = {
 };
 const itemsPerPage = 5;
 
+function setLoading(isLoading, btn, customText = "Loading...") {
+    const globalSpinner = document.getElementById('loading-spinner');
+
+
+    if (globalSpinner) {
+        if (isLoading) globalSpinner.classList.remove('hidden');
+        else globalSpinner.classList.add('hidden');
+    }
+
+    if (btn) {
+        if (isLoading) {
+            btn.disabled = true;
+            btn.classList.add('btn-loading');
+            // Store original text so we don't lose it
+            if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${customText}`;
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+            delete btn.dataset.originalText;
+        }
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     checkAdmin();
     updateUserHeader();
@@ -28,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkAdmin() {
     const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
     if (user.role !== 'admin') {
-        alert('Access denied. Admin only.');
         window.location.href = 'index.html';
     }
 }
@@ -40,6 +65,55 @@ function updateUserHeader() {
         headerUsername.textContent = currentUser.name || 'Admin';
     }
 }
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    sidebar.classList.toggle('show');
+
+    if (!overlay) {
+        const newOverlay = document.createElement('div');
+        newOverlay.className = 'sidebar-overlay';
+        document.body.appendChild(newOverlay);
+        newOverlay.addEventListener('click', toggleSidebar);
+        newOverlay.classList.add('show');
+    } else {
+        overlay.classList.toggle('show');
+    }
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            toggleSidebar();
+        }
+    });
+});
+
+// Toggle dropdown menu
+function toggleDropdown() {
+    const dropdown = document.getElementById('profileDropdown');
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+window.addEventListener('click', function (e) {
+    if (!e.target.closest('.dropdown')) {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkAdmin();
+    updateUserHeader();
+    loadData();
+    setupEventListeners();
+});
+
 
 // Load all registered users
 function loadUsers() {
@@ -63,7 +137,7 @@ function toggleDropdown() {
 }
 
 // Close dropdown when clicking outside
-window.addEventListener('click', function(e) {
+window.addEventListener('click', function (e) {
     if (!e.target.closest('.dropdown')) {
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown && dropdown.classList.contains('show')) {
@@ -91,7 +165,7 @@ function loadData() {
     } else {
         allAssignTasks = [];
     }
-    
+
     updateUI();
     updateTasksView();
 }
@@ -164,11 +238,10 @@ function setupTaskForm() {
         e.preventDefault();
 
         const assigneeName = document.getElementById('assignName').value.trim();
-        
-        // Validate that the employee exists in registered users
+
         const employeeNames = getEmployeeNames();
         const userExists = employeeNames.includes(assigneeName);
-        
+
         if (!userExists) {
             if (employeeNames.length === 0) {
                 showToast('No employees registered yet!', 'error');
@@ -221,12 +294,12 @@ function updateTasksView() {
     // Build table rows
     tbody.innerHTML = paginatedData.map((t, index) => {
         // Determine progress bar color
-        const progressColor = t.progress >= 75 ? '#27ae60' : 
-                              t.progress >= 50 ? '#f39c12' : '#e74c3c';
-        
+        const progressColor = t.progress >= 75 ? '#27ae60' :
+            t.progress >= 50 ? '#f39c12' : '#e74c3c';
+
         // Initialize progress if not exists
         const progress = t.progress || 0;
-        
+
         return `
             <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
                 <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
@@ -263,10 +336,10 @@ function openTaskModal(taskId) {
 
     const modal = document.getElementById('reportModal');
     const modalContent = modal.querySelector('.modal-content');
-    
-    const progressColor = task.progress >= 75 ? '#27ae60' : 
-                          task.progress >= 50 ? '#f39c12' : '#e74c3c';
-    
+
+    const progressColor = task.progress >= 75 ? '#27ae60' :
+        task.progress >= 50 ? '#f39c12' : '#e74c3c';
+
     modalContent.innerHTML = `
         <span class="close" onclick="closeModal()">&times;</span>
         <h2>${task.assigneeName}</h2>
@@ -354,10 +427,10 @@ function updateTaskProgress(taskId) {
     if (!task) return;
 
     const newProgress = parseInt(document.getElementById('progressSlider').value);
-    
+
     // Update progress
     task.progress = newProgress;
-    
+
     // Add to history
     task.updates = task.updates || [];
     task.updates.unshift({
@@ -378,7 +451,7 @@ function updateTaskProgress(taskId) {
     saveData();
     updateTasksView();
     showToast('Task progress updated successfully!', 'success');
-    
+
     // Refresh the modal to show updated data
     openTaskModal(taskId);
 }
@@ -386,7 +459,7 @@ function updateTaskProgress(taskId) {
 // Mark task as complete
 function markTaskComplete(taskId) {
     if (!confirm('Mark this task as 100% complete?')) return;
-    
+
     const task = allAssignTasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -440,12 +513,12 @@ function updateStats() {
 
     if (totalEl) totalEl.textContent = allReports.length;
     if (pendingEl) pendingEl.textContent = allReports.filter(r => r.status === 'Pending').length;
-    
+
     // Update all elements with id="totalTasks"
     totalTasksEls.forEach(el => {
         if (el) el.textContent = allAssignTasks.length;
     });
-    
+
     if (activeEl) activeEl.textContent = new Set(allReports.map(r => r.name)).size;
 
     const weekAgo = new Date();
@@ -515,7 +588,7 @@ function updateTable(data) {
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = data.slice(startIndex, endIndex);
 
-    tbody.innerHTML = paginatedData.map((r, index)=> `
+    tbody.innerHTML = paginatedData.map((r, index) => `
         <tr onclick="openReport(${r.id})">
           <td>${startIndex + index + 1}</td>
           <td>${r.submitDate.toLocaleDateString()}</td>
@@ -538,12 +611,12 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
     if (totalPages <= 1) return;
 
     const paginationRow = document.createElement('tr');
-    
+
     // Determine colspan based on table
     let colspan = 7; // for reports table
     if (tableId === 'task-row') colspan = 6;
     if (tableId === 'leaderboard-rows') colspan = 6;
-    
+
     paginationRow.innerHTML = `
         <td colspan="${colspan}" style="text-align: center; padding: 20px;">
             <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
@@ -566,7 +639,7 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
 
 function changePage(type, newPage) {
     let totalPages;
-    
+
     if (type === 'reports') {
         totalPages = Math.ceil(getFiltered().length / itemsPerPage);
     } else if (type === 'leaderboard') {
@@ -797,7 +870,7 @@ function openReport(id) {
 
     const modal = document.getElementById('reportModal');
     const modalContent = modal.querySelector('.modal-content');
-    
+
     modalContent.innerHTML = `
         <span class="close" onclick="closeModal()">&times;</span>
         <h2 id="modal-name">${r.name}</h2>

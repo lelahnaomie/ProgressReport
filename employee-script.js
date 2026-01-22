@@ -1,6 +1,6 @@
 // Global State
 let allReports = [];
-let allAssignTasks = []; 
+let allAssignTasks = [];
 let currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 let currentReportId = null;
 let currentTaskId = null;
@@ -18,14 +18,13 @@ const contentDiv = document.getElementById('content');
 
 function setLoading(isLoading, btn, customText = "Loading...") {
     const globalSpinner = document.getElementById('loading-spinner');
-    
-    // 1. Handle Global Spinner
+
+
     if (globalSpinner) {
         if (isLoading) globalSpinner.classList.remove('hidden');
         else globalSpinner.classList.add('hidden');
     }
 
-    // 2. Handle the Button
     if (btn) {
         if (isLoading) {
             btn.disabled = true;
@@ -52,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
 //check if user employee
 function checkEmployee() {
     if (!currentUser || currentUser.role !== 'employee') {
-        alert('Access denied. Employees only.');
         window.location.href = 'index.html';
     }
 }
@@ -60,24 +58,26 @@ function checkEmployee() {
 function updateUserHeader() {
     const headerUsername = document.getElementById('headerUsername');
     if (headerUsername) {
-        headerUsername.textContent = currentUser.name || 'Staff Member';
+        headerUsername.textContent = currentUser.name;
     }
 }
 
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('show');
- 
-    let overlay = document.querySelector('.sidebar-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'sidebar-overlay';
-        document.body.appendChild(overlay);
-        overlay.addEventListener('click', toggleSidebar);
-    }
-    overlay.classList.toggle('show');
-}
+    const overlay = document.querySelector('.sidebar-overlay');
 
+    sidebar.classList.toggle('show');
+
+    if (!overlay) {
+        const newOverlay = document.createElement('div');
+        newOverlay.className = 'sidebar-overlay';
+        document.body.appendChild(newOverlay);
+        newOverlay.addEventListener('click', toggleSidebar);
+        newOverlay.classList.add('show');
+    } else {
+        overlay.classList.toggle('show');
+    }
+}
 
 document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -94,7 +94,7 @@ function toggleDropdown() {
 }
 
 // Close dropdown when clicking outside
-window.addEventListener('click', function(e) {
+window.addEventListener('click', function (e) {
     if (!e.target.closest('.dropdown')) {
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown && dropdown.classList.contains('show')) {
@@ -146,7 +146,7 @@ function setupEventListeners() {
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             // Get the submit button inside this specific form
             const submitBtn = form.querySelector('button[type="submit"]');
             setLoading(true, submitBtn, "Submitting...");
@@ -178,10 +178,10 @@ function setupEventListeners() {
                 allReports.push(newReport);
                 saveData();
                 form.reset();
-                
+
                 setLoading(false, submitBtn);
                 showToast('Report submitted successfully!', 'success');
-                loadData(); 
+                loadData();
                 showSection('my-reports-view', document.querySelector('[onclick*="my-reports-view"]'));
             }, 800);
         });
@@ -192,26 +192,26 @@ function setupEventListeners() {
 function updateReportsTable() {
     const myReports = allReports.filter(r => r.name === currentUser.name);
     const tbody = document.getElementById('my-reports-rows');
-    
+
     if (tbody) {
         if (myReports.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">No reports submitted yet.</td></tr>';
         } else {
             const sorted = [...myReports].sort((a, b) => b.id - a.id);
-            
+
             const totalPages = Math.ceil(sorted.length / itemsPerPage);
             const startIndex = (currentPage.reports - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
             const paginatedData = sorted.slice(startIndex, endIndex);
 
-            tbody.innerHTML = paginatedData.map((r, index)=> `
+            tbody.innerHTML = paginatedData.map((r, index) => `
                 <tr onclick="openReport(${r.id})">
-                <td>${startIndex + index + 1}</td>
-                <td>${new Date(r.submitDate).toLocaleDateString()}</td>
-                <td>${r.start} to ${r.end}</td>
+                <td class="id-cell">${startIndex + index + 1}</td>
+                <td class="date-cell">${new Date(r.submitDate).toLocaleDateString()}</td>
+                <td class="period-cell">${r.start} to ${r.end}</td>
                 <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
-                <td><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
-                <td><button class="view-btn" style='border: none; background: none; cursor:pointer'><i class="fas fa-eye"></i> View</button></td>
+                <td class="status-cell"><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
+                <td class="action-cell"><button class="view-btn" style='border: none; background: none; cursor:pointer'><i class="fas fa-eye"></i> View</button></td>
                 </tr>
             `).join('');
 
@@ -244,9 +244,9 @@ function updateTaskTable() {
 
         tbody.innerHTML = paginatedData.map(t => {
             const progress = t.progress || 0;
-            const progressColor = progress >= 75 ? '#27ae60' : 
-                                  progress >= 50 ? '#f39c12' : '#e74c3c';
-            
+            const progressColor = progress >= 75 ? '#27ae60' :
+                progress >= 50 ? '#f39c12' : '#e74c3c';
+
             return `
                 <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
                     <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
@@ -282,7 +282,7 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
 
     const paginationRow = document.createElement('tr');
     const colspan = type === 'reports' ? '6' : '6';
-    
+
     paginationRow.innerHTML = `
         <td colspan="${colspan}" style="text-align: center; padding: 20px;">
             <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
@@ -309,8 +309,8 @@ function changePage(type, newPage) {
     setTimeout(() => {
         const myReports = allReports.filter(r => r.name === currentUser.name);
         const myTasks = allAssignTasks.filter(t => t.assigneeName === currentUser.name);
-        
-        const totalPages = type === 'reports' 
+
+        const totalPages = type === 'reports'
             ? Math.ceil(myReports.length / itemsPerPage)
             : Math.ceil(myTasks.length / itemsPerPage);
 
@@ -332,10 +332,10 @@ function showSection(id, el) {
     document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
     const target = document.getElementById(id);
     if (target) target.style.display = 'block';
-    
+
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
-    
+
     if (id === 'my-reports-view' || id === 'empAssign-view') loadData();
 }
 
@@ -349,7 +349,7 @@ function openReport(id) {
     document.getElementById('modal-dates').textContent = `${r.start} to ${r.end}`;
     document.getElementById('modal-status').innerHTML = `<span class="status-badge ${r.status.toLowerCase()}">${r.status}</span>`;
     document.getElementById('modal-task').textContent = r.task;
-    
+
     document.getElementById('reportModal').style.display = 'block';
 }
 
@@ -365,13 +365,13 @@ function openTaskModal(taskId) {
 
     const modal = document.getElementById('reportModal');
     const modalContent = modal.querySelector('.modal-content');
-    
-    const progressColor = task.progress >= 75 ? '#27ae60' : 
-                          task.progress >= 50 ? '#f39c12' : '#e74c3c';
-    
+
+    const progressColor = task.progress >= 75 ? '#27ae60' :
+        task.progress >= 50 ? '#f39c12' : '#e74c3c';
+
     // Check if task is completed
     const isCompleted = task.status === 'Completed' || task.progress === 100;
-    
+
     modalContent.innerHTML = `
         <span class="close" onclick="closeModal()">&times;</span>
         <h2>${task.assigneeName}</h2>
@@ -465,10 +465,10 @@ function updateMyProgress(taskId) {
     const newProgress = parseInt(document.getElementById('progressSlider').value);
     const noteField = document.getElementById('progressNote');
     const note = noteField ? noteField.value.trim() : '';
-    
+
     // Update progress
     task.progress = newProgress;
-    
+
     // Add to history
     task.updates = task.updates || [];
     task.updates.unshift({
@@ -489,7 +489,7 @@ function updateMyProgress(taskId) {
     saveTaskData();
     updateTaskTable();
     showToast('Your progress has been updated!', 'success');
-    
+
     // Refresh the modal to show updated data
     openTaskModal(taskId);
 }
@@ -520,9 +520,8 @@ function showToast(msg, type = 'success') {
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
         const logoutBtn = document.getElementById('log-btn');
-        // Pass the specific ID and a custom message
         setLoading(true, logoutBtn, "Logging out...");
-        
+
         setTimeout(() => {
             localStorage.removeItem('currentUser');
             window.location.href = 'index.html';
@@ -547,7 +546,7 @@ function saveProfile() {
         currentUser.phone = phone;
 
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        
+
         const users = JSON.parse(localStorage.getItem('cpUsers') || '[]');
         const userIndex = users.findIndex(u => u.email === currentUser.email);
         if (userIndex !== -1) {
@@ -560,6 +559,7 @@ function saveProfile() {
         showToast('Profile updated successfully!', 'success');
     }, 1000);
 }
+
 function saveSettings() {
     const emailNotif = document.getElementById('emailNotif').value;
     const reminderPref = document.getElementById('reminderPref').value;
