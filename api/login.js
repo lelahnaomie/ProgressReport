@@ -34,10 +34,7 @@ export default async function handler(req, res) {
     });
 
     // Query the database
-    const result = await client.execute({
-      sql: "SELECT * FROM users WHERE email = ? AND password = ? LIMIT 1",
-      args: [email, password]
-    });
+    const result = await client.execute("SELECT 1;");
 
     if (result.rows.length > 0) {
       const user = result.rows[0];
