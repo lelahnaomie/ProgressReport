@@ -123,7 +123,6 @@ async function handleLogin(e) {
     e.preventDefault();
     const form = e.target;
     
-    // 1. Get credentials from the form
     const email = form.querySelector('input[type="email"]').value;
     const password = form.querySelector('input[type="password"]').value;
 
