@@ -119,60 +119,47 @@ function setLoading(form, isLoading) {
 }
 
 // Handle login function
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     const form = e.target;
-
-    setLoading(form, true);
-
+    
+    // 1. Get credentials from the form
     const email = form.querySelector('input[type="email"]').value;
     const password = form.querySelector('input[type="password"]').value;
 
-    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
+    setLoading(form, true);
 
-        const roleToken = generateRoleToken(ADMIN_EMAIL, 'admin');
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('roleToken', roleToken);
-        localStorage.setItem('currentUser', JSON.stringify({
-            email: ADMIN_EMAIL,
-            name: ADMIN_NAME,
-            role: 'admin',
-            dept: 'Administration'
-        }));
+        const result = await response.json();
 
-        showToast(`Welcome back ${ADMIN_NAME}!`, 'success');
+        if (response.ok) {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('currentUser', JSON.stringify(result.user));
 
-        setTimeout(() => {
-            window.location.href = 'admin-dashboard.html';
-        }, 1500);
-        return;
-    }
+            showToast(`Welcome back, ${result.user.name}!`, 'success');
 
-    const user = findByEmail(email);
-
-    if (!user || user.password !== password) {
-        showToast(!user ? 'Account not found.' : 'Incorrect password.', 'error');
+            setTimeout(() => {
+                if (result.user.role === 'admin') {
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    window.location.href = 'employee-dashboard.html';
+                }
+            }, 1000);
+        } else {
+            showToast(result.error || 'Login failed', 'error');
+            setLoading(form, false);
+        }
+    } catch (error) {
+        console.error("Login error:", error);
+        showToast('Server connection failed.', 'error');
         setLoading(form, false);
-        return;
     }
-
-    const roleToken = generateRoleToken(user.email, user.role);
-
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('roleToken', roleToken);
-    localStorage.setItem('currentUser', JSON.stringify({
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        dept: user.dept || ''
-    }));
-
-    showToast(`Welcome back ${user.name}!`, 'success');
-
-    setTimeout(() => {
-        window.location.href = 'employee-dashboard.html';
-    }, 1500);
 }
 
 async function handleSignup(e) {
@@ -184,7 +171,7 @@ async function handleSignup(e) {
     const name = form.querySelector('input[type="text"]').value;
     const email = form.querySelector('input[type="email"]').value;
     const password = form.querySelector('input[type="password"]').value;
-    
+
     if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         showToast('Please use a different email.', 'error');
         setLoading(form, false);
@@ -210,9 +197,9 @@ async function handleSignup(e) {
 
         if (response.ok) {
             showToast(`Welcome ${name}! Please log in.`, 'success');
-            
+
             setTimeout(() => {
-                toggleAuth(); 
+                toggleAuth();
                 setLoading(form, false);
             }, 1500);
         } else {

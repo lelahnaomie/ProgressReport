@@ -1,5 +1,5 @@
 {
-  "name": "progress-report-app",
+  "name": "cpreport",
   "version": "1.0.0",
   "dependencies": {
     "@libsql/client": "^0.6.0"
