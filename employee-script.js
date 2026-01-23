@@ -173,13 +173,13 @@ function setupEventListeners() {
         setLoading(true, submitBtn, "Syncing to Turso...");
 
         const reportData = {
-            user_id: currentUser.id,
-            employee_name: currentUser.name,
-            department: document.getElementById('staffDept').value,
-            start_date: document.getElementById('startDate').value,
-            end_date: document.getElementById('endDate').value,
-            task_summary: document.getElementById('taskContent').value
-        };
+    user_id: currentUser.id,
+    employee_name: currentUser.name, // Matches new column
+    department: document.getElementById('staffDept').value,
+    start_date: document.getElementById('startDate').value,
+    end_date: document.getElementById('endDate').value,
+    task_summary: document.getElementById('taskContent').value
+};
 
         try {
             const response = await fetch('/api/submit-report', {

@@ -16,8 +16,8 @@ export default async function handler(req, res) {
     try {
         await client.execute({
             // Added 'status' to the columns and values
-            sql: `INSERT INTO reports (user_id, department, start_date, end_date, task_summary, employee_name, submit_date, status) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            sql: `INSERT INTO reports (user_id, employee_name, department, start_date, end_date, task_summary, submit_date)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);`,
             args: [
                 user_id, 
                 department, 
