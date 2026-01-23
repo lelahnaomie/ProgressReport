@@ -7,6 +7,7 @@ let charts = {};
 let currentUser = JSON.parse(localStorage.getItem('currentUser'));
 let allAssignTasks = [];
 let allUsers = [];
+let validEmployees = [];
 
 let currentPage = {
     reports: 1,
@@ -150,15 +151,14 @@ window.addEventListener('click', function (e) {
 async function loadData() {
     setLoading(true);
     try {
-        // Fetch reports from Turso
-        const response = await fetch('/api/get-reports?role=admin');
-        const rows = await response.json();
-
-        if (response.ok) {
+        // 1. Fetch Reports from Turso
+        const reportRes = await fetch('/api/get-reports?role=admin');
+        if (reportRes.ok) {
+            const rows = await reportRes.json();
             allReports = rows.map(row => ({
                 id: row.id,
-                submitDate: new Date(row.submit_date), // Convert string to Date object
-                name: row.employee_name || 'Unknown', // This fixes the empty name column
+                submitDate: new Date(row.submit_date),
+                name: row.employee_name || 'Unknown',
                 dept: row.department,
                 start: row.start_date,
                 end: row.end_date,
@@ -167,19 +167,35 @@ async function loadData() {
             }));
         }
 
-        // Keep Tasks in LocalStorage for now (or move them to Turso later)
-        if (localStorage.getItem('cpAssignedTasks')) {
-            allAssignTasks = JSON.parse(localStorage.getItem('cpAssignedTasks'));
-            allAssignTasks.forEach(t => {
-                t.submitDate = new Date(t.submitDate);
-            });
+        // 2. Fetch Tasks from Turso
+        const taskRes = await fetch('/api/get-tasks');
+        if (taskRes.ok) {
+            const tRows = await taskRes.json();
+            allAssignTasks = tRows.map(row => ({
+                id: row.id,
+                assignedDate: new Date(row.assigned_date),
+                assigneeName: row.assignee_name,
+                dept: row.department,
+                task: row.task_content,
+                status: row.status,
+                progress: row.progress || 0,
+                dueDate: row.due_date
+            }));
         }
 
-        updateUI();
+        // 3. Fetch Valid Employees (for the validation check)
+        const empRes = await fetch('/api/get-employees');
+        if (empRes.ok) {
+            validEmployees = await empRes.json();
+        }
+
+        // Refresh the HTML tables
+        updateUI(); 
         updateTasksView();
+
     } catch (error) {
-        console.error("Admin fetch error:", error);
-        showToast("Failed to load reports from database", "error");
+        console.error("Admin Load Error:", error);
+        showToast("Database sync failed", "error");
     } finally {
         setLoading(false);
     }
@@ -251,12 +267,11 @@ function setupTaskForm() {
         e.preventDefault();
 
         const assigneeName = document.getElementById('assignName').value.trim();
-        const btn = e.submitter; // The "Assign Task" button
+        const btn = e.submitter;
 
-        // Basic validation
-        const employeeNames = getEmployeeNames();
-        if (!employeeNames.includes(assigneeName)) {
-            showToast(`Employee "${assigneeName}" not found.`, 'error');
+        // VALIDATION: Check against the list we fetched from the database
+        if (!validEmployees.includes(assigneeName)) {
+            showToast(`Employee "${assigneeName}" does not exist in the database.`, 'error');
             return;
         }
 
@@ -279,8 +294,7 @@ function setupTaskForm() {
             if (response.ok) {
                 showToast('Task assigned and saved to database!', 'success');
                 assignform.reset();
-                // Refresh the local data to show the new task in the table
-                await loadData(); 
+                await loadData(); // Refresh the table and the employee list
             } else {
                 throw new Error('Failed to assign task');
             }
