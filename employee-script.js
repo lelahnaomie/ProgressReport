@@ -42,12 +42,10 @@ function setLoading(isLoading, btn, customText = "Loading...") {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    checkEmployee();
     updateUserHeader();
-    loadDataFromDatabase();
+    loadDataFromDatabase(); // Initial fetch from Turso
     setupEventListeners();
 });
-
 //check if user employee
 function checkEmployee() {
     if (!currentUser || currentUser.role !== 'employee') {
@@ -137,69 +135,18 @@ function saveData() {
 function saveTaskData() {
     localStorage.setItem('cpAssignedTasks', JSON.stringify(allAssignTasks));
 }
-
-// 1. Updated setupEventListeners
-function setupEventListeners() {
-    // We must define 'form' so the browser knows which form to watch
-    const form = document.getElementById('submissionForm');
-
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = form.querySelector('button[type="submit"]');
-            setLoading(true, submitBtn, "Submitting to Database...");
-
-            // Get values directly from the input fields
-            const reportData = {
-                user_id: currentUser.id,
-                employee_name: currentUser.name,
-                department: document.getElementById('staffDept').value,
-                start_date: document.getElementById('startDate').value,
-                end_date: document.getElementById('endDate').value,
-                task_summary: document.getElementById('taskContent').value
-            };
-
-            try {
-                const response = await fetch('/api/submit-report', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(reportData)
-                });
-
-                if (response.ok) {
-                    showToast('Report saved to Turso!', 'success');
-                    form.reset();
-                    // This is the magic part: fetch the new list from Turso
-                    await loadDataFromDatabase();
-                    showSection('my-reports-view');
-                } else {
-                    const err = await response.json();
-                    showToast(err.error || 'Submission failed', 'error');
-                }
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                showToast('Server connection error', 'error');
-            } finally {
-                setLoading(false, submitBtn);
-            }
-        });
-    }
-}
-
-// 2. Add this function to bridge Turso and your Table
 async function loadDataFromDatabase() {
-    // If there's no user logged in, don't try to fetch
     if (!currentUser.id) return;
-
+    setLoading(true);
+    
     try {
         const response = await fetch(`/api/get-reports?user_id=${currentUser.id}&role=${currentUser.role}`);
         const rows = await response.json();
 
         if (response.ok) {
-            // Transform database rows into the format your table expects
             allReports = rows.map(row => ({
                 id: row.id,
-                submitDate: new Date(row.submit_date),
+                submitDate: row.submit_date,
                 name: row.employee_name,
                 dept: row.department,
                 start: row.start_date,
@@ -207,76 +154,87 @@ async function loadDataFromDatabase() {
                 task: row.task_summary,
                 status: row.status || 'Pending'
             }));
-
-            updateReportsTable(); // Draw the table with the new data
+            updateReportsTable();
         }
     } catch (error) {
-        console.error("Database fetch error:", error);
+        console.error("Fetch error:", error);
+        showToast("Failed to sync with database", "error");
+    } finally {
+        setLoading(false);
     }
 }
-
-// 3. Make sure setupEventListeners calls it after success
 function setupEventListeners() {
     const form = document.getElementById('submissionForm');
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    if (!form) return;
 
-            console.log("Attempting to submit:", reportData); // Add this line
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        setLoading(true, submitBtn, "Syncing to Turso...");
 
+        const reportData = {
+            user_id: currentUser.id,
+            employee_name: currentUser.name,
+            department: document.getElementById('staffDept').value,
+            start_date: document.getElementById('startDate').value,
+            end_date: document.getElementById('endDate').value,
+            task_summary: document.getElementById('taskContent').value
+        };
+
+        try {
             const response = await fetch('/api/submit-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reportData)
             });
 
-            console.log("Server Response Status:", response.status); // Add this line
-
             if (response.ok) {
-                showToast('Success!', 'success');
+                showToast('Report submitted successfully!', 'success');
                 form.reset();
-                await loadDataFromDatabase(); // REFRESH THE TABLE
+                await loadDataFromDatabase(); // Refresh table
                 showSection('my-reports-view');
+            } else {
+                const err = await response.json();
+                showToast(err.error || 'Submission failed', 'error');
             }
-        });
-    }
+        } catch (error) {
+            showToast('Server connection error', 'error');
+        } finally {
+            setLoading(false, submitBtn);
+        }
+    });
 }
 // UI Tables  
 function updateReportsTable() {
-    const myReports = allReports.filter(r => r.name === currentUser.name);
     const tbody = document.getElementById('my-reports-rows');
+    if (!tbody) return;
 
-    if (tbody) {
-        if (myReports.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">No reports submitted yet.</td></tr>';
-        } else {
-            const sorted = [...myReports].sort((a, b) => b.id - a.id);
+    // Use allReports directly (they are already filtered by the API)
+    if (allReports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No reports found.</td></tr>';
+    } else {
+        const sorted = [...allReports].sort((a, b) => b.id - a.id);
+        const startIndex = (currentPage.reports - 1) * itemsPerPage;
+        const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage);
 
-            const totalPages = Math.ceil(sorted.length / itemsPerPage);
-            const startIndex = (currentPage.reports - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const paginatedData = sorted.slice(startIndex, endIndex);
-
-            tbody.innerHTML = paginatedData.map((r, index) => `
-                <tr onclick="openReport(${r.id})">
+        tbody.innerHTML = paginatedData.map((r, index) => `
+            <tr onclick="openReport(${r.id})">
                 <td class="id-cell">${startIndex + index + 1}</td>
                 <td class="date-cell">${new Date(r.submitDate).toLocaleDateString()}</td>
                 <td class="period-cell">${r.start} to ${r.end}</td>
                 <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
                 <td class="status-cell"><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
-                <td class="action-cell"><button class="view-btn" style='border: none; background: none; cursor:pointer'><i class="fas fa-eye"></i> View</button></td>
-                </tr>
-            `).join('');
+                <td class="action-cell"><button class="view-btn"><i class="fas fa-eye"></i> View</button></td>
+            </tr>
+        `).join('');
 
-            addPaginationControls('my-reports-rows', sorted.length, currentPage.reports, 'reports');
-        }
+        addPaginationControls('my-reports-rows', sorted.length, currentPage.reports, 'reports');
     }
 
-    // Update Statistics 
-    updateCounter('myTotalReports', myReports.length);
-    updateCounter('myApproved', myReports.filter(r => r.status === 'Approved').length);
-    updateCounter('myPending', myReports.filter(r => r.status === 'Pending').length);
-    updateCounter('myRejected', myReports.filter(r => r.status === 'Rejected').length);
+    // Update Counters
+    updateCounter('myTotalReports', allReports.length);
+    updateCounter('myApproved', allReports.filter(r => r.status === 'Approved').length);
+    updateCounter('myPending', allReports.filter(r => r.status === 'Pending').length);
 }
 
 function updateTaskTable() {
@@ -360,12 +318,10 @@ function changePage(type, newPage) {
     setLoading(true);
 
     setTimeout(() => {
-        const myReports = allReports.filter(r => r.name === currentUser.name);
-        const myTasks = allAssignTasks.filter(t => t.assigneeName === currentUser.name);
-
+        // Use allReports directly for Turso data
         const totalPages = type === 'reports'
-            ? Math.ceil(myReports.length / itemsPerPage)
-            : Math.ceil(myTasks.length / itemsPerPage);
+            ? Math.ceil(allReports.length / itemsPerPage)
+            : Math.ceil(allAssignTasks.filter(t => t.assigneeName === currentUser.name).length / itemsPerPage);
 
         if (newPage >= 1 && newPage <= totalPages) {
             currentPage[type] = newPage;
@@ -389,7 +345,12 @@ function showSection(id, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
-    if (id === 'my-reports-view' || id === 'empAssign-view') loadData();
+    // FIX: Call the database fetch instead of the local storage fetch
+    if (id === 'my-reports-view') {
+        loadDataFromDatabase(); 
+    } else if (id === 'empAssign-view') {
+        loadData(); // Keep this for Tasks until we move Tasks to Turso too
+    }
 }
 
 function openReport(id) {
