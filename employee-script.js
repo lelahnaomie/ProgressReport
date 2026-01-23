@@ -140,10 +140,9 @@ async function loadDataFromDatabase() {
     setLoading(true);
     
     try {
-        // 1. Fetch Reports
+        // 1. Fetch Reports (Existing logic)
         const reportRes = await fetch(`/api/get-reports?user_id=${currentUser.id}&role=${currentUser.role}`);
         const reportRows = await reportRes.json();
-
         if (reportRes.ok) {
             allReports = reportRows.map(row => ({
                 id: row.id,
@@ -157,7 +156,8 @@ async function loadDataFromDatabase() {
             }));
         }
 
-        // 2. Fetch Tasks (NEW)
+        // 2. Fetch Tasks (CRITICAL FIX)
+        // We use encodeURIComponent to handle spaces in names (e.g., "John Doe")
         const taskRes = await fetch(`/api/get-tasks?assignee_name=${encodeURIComponent(currentUser.name)}`);
         const taskRows = await taskRes.json();
 
@@ -172,14 +172,15 @@ async function loadDataFromDatabase() {
                 progress: row.progress || 0,
                 dueDate: row.due_date
             }));
+            
+            // After updating the variable, refresh the table
+            updateTaskTable(); 
         }
 
         updateReportsTable();
-        updateTaskTable();
 
     } catch (error) {
-        console.error("Fetch error:", error);
-        showToast("Failed to sync with database", "error");
+        console.error("Employee sync error:", error);
     } finally {
         setLoading(false);
     }
@@ -262,8 +263,7 @@ function updateTaskTable() {
     const tbody = document.getElementById('task-row');
     if (!tbody) return;
 
-    const myTasks = allAssignTasks.filter(t => t.assigneeName === currentUser.name);
-
+const myTasks = allAssignTasks;
     if (myTasks.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">No tasks assigned to you yet.</td></tr>';
     } else {
