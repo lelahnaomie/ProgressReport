@@ -147,29 +147,43 @@ window.addEventListener('click', function (e) {
 });
 
 // data management
-function loadData() {
-    if (localStorage.getItem('cpReports')) {
-        allReports = JSON.parse(localStorage.getItem('cpReports'));
-        allReports.forEach(r => r.submitDate = new Date(r.submitDate));
-    } else {
-        allReports = [];
-    }
+async function loadData() {
+    setLoading(true);
+    try {
+        // Fetch reports from Turso
+        const response = await fetch('/api/get-reports?role=admin');
+        const rows = await response.json();
 
-    if (localStorage.getItem('cpAssignedTasks')) {
-        allAssignTasks = JSON.parse(localStorage.getItem('cpAssignedTasks'));
-        allAssignTasks.forEach(t => {
-            t.submitDate = new Date(t.submitDate);
-            if (!t.progress) t.progress = 0;
-            if (!t.updates) t.updates = [];
-        });
-    } else {
-        allAssignTasks = [];
-    }
+        if (response.ok) {
+            allReports = rows.map(row => ({
+                id: row.id,
+                submitDate: new Date(row.submit_date), // Convert string to Date object
+                name: row.employee_name || 'Unknown', // This fixes the empty name column
+                dept: row.department,
+                start: row.start_date,
+                end: row.end_date,
+                task: row.task_summary,
+                status: row.status || 'Pending'
+            }));
+        }
 
-    updateUI();
-    updateTasksView();
+        // Keep Tasks in LocalStorage for now (or move them to Turso later)
+        if (localStorage.getItem('cpAssignedTasks')) {
+            allAssignTasks = JSON.parse(localStorage.getItem('cpAssignedTasks'));
+            allAssignTasks.forEach(t => {
+                t.submitDate = new Date(t.submitDate);
+            });
+        }
+
+        updateUI();
+        updateTasksView();
+    } catch (error) {
+        console.error("Admin fetch error:", error);
+        showToast("Failed to load reports from database", "error");
+    } finally {
+        setLoading(false);
+    }
 }
-
 function saveData() {
     localStorage.setItem('cpReports', JSON.stringify(allReports));
     localStorage.setItem('cpAssignedTasks', JSON.stringify(allAssignTasks));
@@ -229,48 +243,53 @@ function addReport(name, dept, start, end, task, silent = false) {
     updateUI();
     if (!silent) showToast('report submitted successfully!', 'success');
 }
-
 function setupTaskForm() {
     const assignform = document.getElementById('assignForm');
     if (!assignform) return;
 
-    assignform.addEventListener('submit', (e) => {
+    assignform.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const assigneeName = document.getElementById('assignName').value.trim();
+        const btn = e.submitter; // The "Assign Task" button
 
+        // Basic validation
         const employeeNames = getEmployeeNames();
-        const userExists = employeeNames.includes(assigneeName);
-
-        if (!userExists) {
-            if (employeeNames.length === 0) {
-                showToast('No employees registered yet!', 'error');
-            } else {
-                showToast(`Employee "${assigneeName}" not found. Registered employees: ${employeeNames.join(', ')}`, 'error');
-            }
+        if (!employeeNames.includes(assigneeName)) {
+            showToast(`Employee "${assigneeName}" not found.`, 'error');
             return;
         }
 
-        const newTask = {
-            id: Date.now() + Math.random(),
-            submitDate: new Date().toISOString(),
-            assigneeName: assigneeName,
-            dept: document.getElementById('assignDept').value,
-            assignedDate: document.getElementById('assignedDate').value,
-            dueDate: document.getElementById('dueDate').value,
-            task: document.getElementById('assignTask').value,
-            status: 'Pending',
-            progress: 0,
-            updates: []
+        const taskData = {
+            assignee_name: assigneeName,
+            department: document.getElementById('assignDept').value,
+            due_date: document.getElementById('dueDate').value,
+            task_content: document.getElementById('assignTask').value
         };
 
-        allAssignTasks.push(newTask);
-        saveData();
-        assignform.reset();
+        setLoading(true, btn, "Assigning...");
 
-        showToast('task assigned successfully!', 'success');
-        updateUI();
-        updateTasksView();
+        try {
+            const response = await fetch('/api/assign-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+
+            if (response.ok) {
+                showToast('Task assigned and saved to database!', 'success');
+                assignform.reset();
+                // Refresh the local data to show the new task in the table
+                await loadData(); 
+            } else {
+                throw new Error('Failed to assign task');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Connection error. Task not saved.', 'error');
+        } finally {
+            setLoading(false, btn);
+        }
     });
 }
 
@@ -909,14 +928,25 @@ function closeModal() {
     document.getElementById('reportModal').style.display = 'none';
 }
 
-function approveReport() {
+async function approveReport() {
     const report = allReports.find(r => r.id === currentReportId);
-    if (report) {
-        report.status = 'Approved';
-        saveData();
-        updateUI();
-        closeModal();
-        showToast('report approved successfully!', 'success');
+    if (!report) return;
+
+    try {
+        const response = await fetch('/api/update-report-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: report.id, status: 'Approved' })
+        });
+
+        if (response.ok) {
+            report.status = 'Approved';
+            updateUI();
+            closeModal();
+            showToast('Report approved and synced!', 'success');
+        }
+    } catch (error) {
+        showToast('Failed to update status on server', 'error');
     }
 }
 
