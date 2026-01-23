@@ -139,54 +139,45 @@ function saveTaskData() {
 }
 
 function setupEventListeners() {
-    const form = document.getElementById('submissionForm');
-    if (form) {
-        const nameField = document.getElementById('staffName');
-        if (nameField) nameField.value = currentUser.name || '';
+    form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]');
+    setLoading(true, submitBtn, "Submitting to Database...");
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
+    const reportData = {
+        user_id: currentUser.id,
+        employee_name: currentUser.name,
+        department: document.getElementById('staffDept').value,
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value,
+        task_summary: document.getElementById('taskContent').value
+    };
 
-            // Get the submit button inside this specific form
-            const submitBtn = form.querySelector('button[type="submit"]');
-            setLoading(true, submitBtn, "Submitting...");
-
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
-            const task = document.getElementById('taskContent').value;
-            const dept = document.getElementById('staffDept').value;
-            const name = nameField ? nameField.value : currentUser.name;
-
-            if (new Date(end) < new Date(start)) {
-                setLoading(false, submitBtn);
-                return showToast('End date must be after start date!', 'error');
-            }
-
-            // Artificial delay to show the loading state
-            setTimeout(() => {
-                const newReport = {
-                    id: Date.now() + Math.random(),
-                    submitDate: new Date().toISOString(),
-                    name: name,
-                    dept: dept,
-                    start: start,
-                    end: end,
-                    task: task,
-                    status: 'Pending'
-                };
-
-                allReports.push(newReport);
-                saveData();
-                form.reset();
-
-                setLoading(false, submitBtn);
-                showToast('Report submitted successfully!', 'success');
-                loadData();
-                showSection('my-reports-view', document.querySelector('[onclick*="my-reports-view"]'));
-            }, 800);
+    try {
+        const response = await fetch('/api/submit-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reportData)
         });
+
+        if (response.ok) {
+            showToast('Report saved to Turso!', 'success');
+            form.reset();
+            
+            await loadDataFromDatabase(); 
+            showSection('my-reports-view');
+        } else {
+            const err = await response.json();
+            showToast(err.error || 'Submission failed', 'error');
+        }
+    } catch (error) {
+        showToast('Server connection error', 'error');
+    } finally {
+        setLoading(false, submitBtn);
     }
+});
 }
+
 
 // UI Tables  
 function updateReportsTable() {
