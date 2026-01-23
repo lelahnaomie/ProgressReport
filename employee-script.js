@@ -141,8 +141,8 @@ function saveTaskData() {
 // 1. Updated setupEventListeners
 function setupEventListeners() {
     // We must define 'form' so the browser knows which form to watch
-    const form = document.getElementById('submissionForm'); 
-    
+    const form = document.getElementById('submissionForm');
+
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -170,7 +170,7 @@ function setupEventListeners() {
                     showToast('Report saved to Turso!', 'success');
                     form.reset();
                     // This is the magic part: fetch the new list from Turso
-                    await loadDataFromDatabase(); 
+                    await loadDataFromDatabase();
                     showSection('my-reports-view');
                 } else {
                     const err = await response.json();
@@ -221,8 +221,17 @@ function setupEventListeners() {
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // ... your fetch logic to /api/submit-report ...
-            
+
+            console.log("Attempting to submit:", reportData); // Add this line
+
+            const response = await fetch('/api/submit-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reportData)
+            });
+
+            console.log("Server Response Status:", response.status); // Add this line
+
             if (response.ok) {
                 showToast('Success!', 'success');
                 form.reset();
