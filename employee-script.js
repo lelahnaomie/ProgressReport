@@ -44,7 +44,7 @@ function setLoading(isLoading, btn, customText = "Loading...") {
 document.addEventListener('DOMContentLoaded', () => {
     checkEmployee();
     updateUserHeader();
-    loadData();
+    loadDataFromDatabase();
     setupEventListeners();
 });
 
@@ -138,47 +138,100 @@ function saveTaskData() {
     localStorage.setItem('cpAssignedTasks', JSON.stringify(allAssignTasks));
 }
 
+// 1. Updated setupEventListeners
 function setupEventListeners() {
-    form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const submitBtn = form.querySelector('button[type="submit"]');
-    setLoading(true, submitBtn, "Submitting to Database...");
+    // We must define 'form' so the browser knows which form to watch
+    const form = document.getElementById('submissionForm'); 
+    
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            setLoading(true, submitBtn, "Submitting to Database...");
 
-    const reportData = {
-        user_id: currentUser.id,
-        employee_name: currentUser.name,
-        department: document.getElementById('staffDept').value,
-        start_date: document.getElementById('startDate').value,
-        end_date: document.getElementById('endDate').value,
-        task_summary: document.getElementById('taskContent').value
-    };
+            // Get values directly from the input fields
+            const reportData = {
+                user_id: currentUser.id,
+                employee_name: currentUser.name,
+                department: document.getElementById('staffDept').value,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                task_summary: document.getElementById('taskContent').value
+            };
 
-    try {
-        const response = await fetch('/api/submit-report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(reportData)
+            try {
+                const response = await fetch('/api/submit-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reportData)
+                });
+
+                if (response.ok) {
+                    showToast('Report saved to Turso!', 'success');
+                    form.reset();
+                    // This is the magic part: fetch the new list from Turso
+                    await loadDataFromDatabase(); 
+                    showSection('my-reports-view');
+                } else {
+                    const err = await response.json();
+                    showToast(err.error || 'Submission failed', 'error');
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                showToast('Server connection error', 'error');
+            } finally {
+                setLoading(false, submitBtn);
+            }
         });
-
-        if (response.ok) {
-            showToast('Report saved to Turso!', 'success');
-            form.reset();
-            
-            await loadDataFromDatabase(); 
-            showSection('my-reports-view');
-        } else {
-            const err = await response.json();
-            showToast(err.error || 'Submission failed', 'error');
-        }
-    } catch (error) {
-        showToast('Server connection error', 'error');
-    } finally {
-        setLoading(false, submitBtn);
     }
-});
 }
 
+// 2. Add this function to bridge Turso and your Table
+async function loadDataFromDatabase() {
+    // If there's no user logged in, don't try to fetch
+    if (!currentUser.id) return;
 
+    try {
+        const response = await fetch(`/api/get-reports?user_id=${currentUser.id}&role=${currentUser.role}`);
+        const rows = await response.json();
+
+        if (response.ok) {
+            // Transform database rows into the format your table expects
+            allReports = rows.map(row => ({
+                id: row.id,
+                submitDate: new Date(row.submit_date),
+                name: row.employee_name,
+                dept: row.department,
+                start: row.start_date,
+                end: row.end_date,
+                task: row.task_summary,
+                status: row.status || 'Pending'
+            }));
+
+            updateReportsTable(); // Draw the table with the new data
+        }
+    } catch (error) {
+        console.error("Database fetch error:", error);
+    }
+}
+
+// 3. Make sure setupEventListeners calls it after success
+function setupEventListeners() {
+    const form = document.getElementById('submissionForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // ... your fetch logic to /api/submit-report ...
+            
+            if (response.ok) {
+                showToast('Success!', 'success');
+                form.reset();
+                await loadDataFromDatabase(); // REFRESH THE TABLE
+                showSection('my-reports-view');
+            }
+        });
+    }
+}
 // UI Tables  
 function updateReportsTable() {
     const myReports = allReports.filter(r => r.name === currentUser.name);
