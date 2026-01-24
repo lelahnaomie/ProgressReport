@@ -44,7 +44,7 @@ function setLoading(isLoading, btn, customText = "Loading...") {
 document.addEventListener('DOMContentLoaded', () => {
     checkEmployee();
     updateUserHeader();
-    loadDataFromDatabase();
+    loadDataFromDatabase(); 
     setupEventListeners();
 });
 
@@ -109,19 +109,19 @@ async function loadDataFromDatabase() {
         console.error('no current user found');
         return;
     }
-
+    
     setLoading(true);
 
     try {
         // fetch updated profile
         const profileRes = await fetch(`/api/get-profile?id=${currentUser.id}`);
-
+        
         if (profileRes.ok) {
             const freshUser = await profileRes.json();
             currentUser = { ...currentUser, ...freshUser };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             updateUserHeader();
-
+            
             const profileSection = document.getElementById('profile-view');
             if (profileSection && profileSection.style.display !== 'none') {
                 loadProfileData();
@@ -172,7 +172,7 @@ async function loadDataFromDatabase() {
 
 function loadProfileData() {
     const userStr = localStorage.getItem('currentUser');
-
+    
     if (!userStr) {
         window.location.href = 'index.html';
         return;
@@ -185,15 +185,15 @@ function loadProfileData() {
     const profileRole = document.getElementById('profile-role');
     if (profileName) profileName.textContent = user.name;
     if (profileRole) profileRole.textContent = user.role || 'Employee';
-
+    
     // fill the editable input fields
     const nameField = document.getElementById('profileName');
     const emailField = document.getElementById('profileEmail');
     const deptField = document.getElementById('profileDept');
-
+    
     if (nameField) nameField.value = user.name || '';
     if (emailField) emailField.value = user.email || '';
-
+    
     // department is read-only assigned by admin
     if (deptField) {
         deptField.value = user.department || 'Not Assigned';
@@ -210,7 +210,7 @@ async function markTaskComplete(taskId) {
 
 async function deleteTask(taskId) {
     if (!confirm('are you sure you want to delete this task? this cannot be undone.')) return;
-
+    
     setLoading(true);
     try {
         const response = await fetch('/api/delete-task', {
@@ -221,7 +221,7 @@ async function deleteTask(taskId) {
 
         if (response.ok) {
             showToast('task deleted successfully', 'warning');
-            await loadDataFromDatabase();
+            await loadDataFromDatabase(); 
             closeModal();
         } else {
             showToast('delete failed', 'error');
@@ -237,7 +237,7 @@ async function deleteTask(taskId) {
 async function updateMyProgress(taskId, overrideProgress = null, overrideNote = null) {
     const progressSlider = document.getElementById('progressSlider');
     const progressNote = document.getElementById('progressNote');
-
+    
     const newProgress = overrideProgress !== null ? overrideProgress : parseInt(progressSlider.value);
     const note = overrideNote !== null ? overrideNote : (progressNote ? progressNote.value.trim() : '');
 
@@ -254,13 +254,13 @@ async function updateMyProgress(taskId, overrideProgress = null, overrideNote = 
                 id: taskId,
                 progress: newProgress,
                 status: newStatus,
-                update_note: note
+                update_note: note 
             })
         });
 
         if (response.ok) {
             showToast('progress updated successfully', 'success');
-            await loadDataFromDatabase();
+            await loadDataFromDatabase(); 
             closeModal();
         } else {
             const errorData = await response.json();
@@ -283,27 +283,20 @@ function showSection(id, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
-    // auto-fill name and department when showing submit report section
+    // auto-fill department when showing submit report section
     if (id === 'submit-view') {
-        const nameField = document.getElementById('staffName');
         const deptField = document.getElementById('staffDept');
-
-        if (nameField && currentUser.name) {
-            nameField.value = currentUser.name;
-        }
-
         if (deptField && currentUser.department) {
             deptField.value = currentUser.department;
-        } else if (deptField) {
-            deptField.value = 'Not Assigned';
         }
     }
 
-    if (id === 'profile-view') loadProfileData();
+    if (id === 'profile-view') loadProfileData(); 
     if (id === 'my-reports-view' || id === 'empAssign-view') {
         loadDataFromDatabase();
     }
 }
+
 function setupEventListeners() {
     const form = document.getElementById('submissionForm');
     if (!form) return;
@@ -322,7 +315,7 @@ function setupEventListeners() {
 
         const reportData = {
             user_id: currentUser.id,
-            employee_name: currentUser.name,
+            employee_name: currentUser.name, 
             department: currentUser.department,
             start_date: document.getElementById('startDate').value,
             end_date: document.getElementById('endDate').value,
@@ -331,24 +324,24 @@ function setupEventListeners() {
 
         try {
             console.log('submitting report with data:', reportData);
-
+            
             const response = await fetch('/api/reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'submit',
+                    action: 'submit', 
                     ...reportData
                 })
             });
 
             console.log('response status:', response.status);
-
+            
             if (response.ok) {
                 const result = await response.json();
                 console.log('success response:', result);
                 showToast('report submitted successfully', 'success');
                 form.reset();
-                await loadDataFromDatabase();
+                await loadDataFromDatabase(); 
                 showSection('my-reports-view');
             } else {
                 const err = await response.json();
@@ -651,7 +644,7 @@ async function saveProfile() {
 function saveSettings() {
     const saveBtn = document.querySelector('#settings-view .btn');
     setLoading(true, saveBtn, "saving...");
-
+    
     const emailNotif = document.getElementById('emailNotif').value;
     const reminderPref = document.getElementById('reminderPref').value;
     const langPref = document.getElementById('langPref').value;
