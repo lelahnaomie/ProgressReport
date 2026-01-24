@@ -135,13 +135,28 @@ function saveTaskData() {
     localStorage.setItem('cpAssignedTasks', JSON.stringify(allAssignTasks));
 }
 async function loadDataFromDatabase() {
-    if (!currentUser.id) return;
+    if (!currentUser || !currentUser.id) return;
     setLoading(true);
 
     try {
+        const profileRes = await fetch(`/api/get-profile?id=${currentUser.id}`);
+        
+        if (profileRes.ok) {
+            const freshUser = await profileRes.json();
+            
+            currentUser = { ...currentUser, ...freshUser };
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            updateUserHeader();
+            
+            const profileSection = document.getElementById('profile-view');
+            if (profileSection && profileSection.style.display !== 'none') {
+                loadProfileData();
+            }
+        }
         const reportRes = await fetch(`/api/get-reports?user_id=${currentUser.id}&role=${currentUser.role}`);
-        const reportRows = await reportRes.json();
         if (reportRes.ok) {
+            const reportRows = await reportRes.json();
             allReports = reportRows.map(row => ({
                 id: row.id,
                 submitDate: row.submit_date,
@@ -152,12 +167,12 @@ async function loadDataFromDatabase() {
                 task: row.task_summary,
                 status: row.status || 'Pending'
             }));
+            updateReportsTable();
         }
 
         const taskRes = await fetch(`/api/get-tasks?assignee_name=${encodeURIComponent(currentUser.name)}`);
-        const taskRows = await taskRes.json();
-
         if (taskRes.ok) {
+            const taskRows = await taskRes.json();
             allAssignTasks = taskRows.map(row => ({
                 id: row.id,
                 assignedDate: row.assigned_date,
@@ -168,15 +183,12 @@ async function loadDataFromDatabase() {
                 progress: row.progress || 0,
                 dueDate: row.due_date
             }));
-
-   
             updateTaskTable();
         }
 
-        updateReportsTable();
-
     } catch (error) {
-        console.error("Employee sync error:", error);
+        console.error("Data synchronization error:", error);
+        showToast('Failed to sync data with server', 'error');
     } finally {
         setLoading(false);
     }
