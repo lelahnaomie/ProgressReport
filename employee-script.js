@@ -43,7 +43,7 @@ function setLoading(isLoading, btn, customText = "Loading...") {
 
 document.addEventListener('DOMContentLoaded', () => {
     updateUserHeader();
-    loadDataFromDatabase(); // Initial fetch from Turso
+    loadDataFromDatabase(); 
     setupEventListeners();
 });
 //check if user employee
@@ -116,7 +116,6 @@ function loadData() {
         allAssignTasks = JSON.parse(storedTasks);
         allAssignTasks.forEach(t => {
             t.submitDate = new Date(t.submitDate);
-            // Initialize progress tracking if not exists
             if (!t.progress) t.progress = 0;
             if (!t.updates) t.updates = [];
         });
@@ -140,7 +139,6 @@ async function loadDataFromDatabase() {
     setLoading(true);
 
     try {
-        // 1. Fetch Reports (Existing logic)
         const reportRes = await fetch(`/api/get-reports?user_id=${currentUser.id}&role=${currentUser.role}`);
         const reportRows = await reportRes.json();
         if (reportRes.ok) {
@@ -171,7 +169,7 @@ async function loadDataFromDatabase() {
                 dueDate: row.due_date
             }));
 
-            // After updating the variable, refresh the table
+   
             updateTaskTable();
         }
 
@@ -181,6 +179,124 @@ async function loadDataFromDatabase() {
         console.error("Employee sync error:", error);
     } finally {
         setLoading(false);
+    }
+}
+function loadProfileData() {
+   
+    document.getElementById('profileName').value = currentUser.name || '';
+    document.getElementById('profileEmail').value = currentUser.email || '';
+    
+    const deptSelect = document.getElementById('profileDept');
+    if (currentUser.dept) {
+        deptSelect.value = currentUser.dept;
+      
+        deptSelect.disabled = true; 
+        deptSelect.style.backgroundColor = "#f0f0f0";
+        deptSelect.title = "Department can only be changed by Admin";
+    }
+}
+
+async function markTaskComplete(taskId) {
+    if (!confirm('Mark this task as 100% finished?')) return;
+    
+    await updateMyProgress(taskId, 100, "Task marked as complete by employee.");
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('Are you sure you want to delete this task? This cannot be undone.')) return;
+    
+    setLoading(true);
+    try {
+        const response = await fetch('/api/delete-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: taskId })
+        });
+
+        if (response.ok) {
+            showToast('Task deleted successfully', 'warning');
+            await loadDataFromDatabase(); 
+            closeModal();
+        } else {
+            showToast('Delete failed', 'error');
+        }
+    } catch (error) {
+        showToast('Connection error', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+
+async function deleteTask(taskId) {
+    if (!confirm('Are you sure you want to delete this task? This cannot be undone.')) return;
+    
+    setLoading(true);
+    try {
+        const response = await fetch('/api/delete-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: taskId })
+        });
+
+        if (response.ok) {
+            showToast('Task deleted successfully', 'warning');
+            await loadDataFromDatabase();
+            closeModal();
+        }
+    } catch (error) {
+        showToast('Error deleting task', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function updateMyProgress(taskId, overrideProgress = null, overrideNote = null) {
+    const newProgress = overrideProgress !== null ? overrideProgress : parseInt(document.getElementById('progressSlider').value);
+    const note = overrideNote !== null ? overrideNote : document.getElementById('progressNote').value.trim();
+
+    let newStatus = 'In Progress';
+    if (newProgress === 100) newStatus = 'Completed';
+    if (newProgress === 0) newStatus = 'Pending';
+
+    setLoading(true);
+    try {
+        const response = await fetch('/api/update-task-progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: taskId,
+                progress: newProgress,
+                status: newStatus,
+                update_note: note 
+            })
+        });
+
+        if (response.ok) {
+            showToast('Progress synced to database!', 'success');
+            await loadDataFromDatabase(); 
+            closeModal();
+        } else {
+            showToast('Failed to update server', 'error');
+        }
+    } catch (error) {
+        showToast('Connection error', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+function showSection(id, el) {
+    document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
+    const target = document.getElementById(id);
+    if (target) target.style.display = 'block';
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+
+    if (id === 'profile-view') loadProfileData(); 
+    if (id === 'my-reports-view' || id === 'empAssign-view') {
+        loadDataFromDatabase();
     }
 }
 function setupEventListeners() {
@@ -194,7 +310,7 @@ function setupEventListeners() {
 
         const reportData = {
             user_id: currentUser.id,
-            employee_name: currentUser.name, // Matches new column
+            employee_name: currentUser.name, 
             department: document.getElementById('staffDept').value,
             start_date: document.getElementById('startDate').value,
             end_date: document.getElementById('endDate').value,
@@ -211,7 +327,7 @@ function setupEventListeners() {
             if (response.ok) {
                 showToast('Report submitted successfully!', 'success');
                 form.reset();
-                await loadDataFromDatabase(); // Refresh table
+                await loadDataFromDatabase(); 
                 showSection('my-reports-view');
             } else {
                 const err = await response.json();
@@ -229,7 +345,7 @@ function updateReportsTable() {
     const tbody = document.getElementById('my-reports-rows');
     if (!tbody) return;
 
-    // Use allReports directly (they are already filtered by the API)
+
     if (allReports.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No reports found.</td></tr>';
     } else {
@@ -315,22 +431,22 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
     const colspan = type === 'reports' ? '6' : '6';
 
     paginationRow.innerHTML = `
-        <td colspan="${colspan}" style="text-align: center; padding: 20px;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-                <button onclick="changePage('${type}', ${currentPageNum - 1})" 
-                    ${currentPageNum === 1 ? 'disabled' : ''} 
-                    style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-                <span style="font-weight: 600;">Page ${currentPageNum} of ${totalPages}</span>
-                <button onclick="changePage('${type}', ${currentPageNum + 1})" 
-                    ${currentPageNum === totalPages ? 'disabled' : ''} 
-                    style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-        </td>
-    `;
+<td colspan="${colspan}" style="text-align: center; padding: 20px;">
+<div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+<button onclick="changePage('${type}', ${currentPageNum - 1})" 
+${currentPageNum === 1 ? 'disabled' : ''} 
+style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+<i class="fas fa-arrow-left"></i>
+</button>
+<span style="font-weight: 600;">Page ${currentPageNum} of ${totalPages}</span>
+<button onclick="changePage('${type}', ${currentPageNum + 1})" 
+${currentPageNum === totalPages ? 'disabled' : ''} 
+style="padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; background: white; border-radius: 4px;">
+<i class="fas fa-arrow-right"></i>
+</button>
+</div>
+</td>
+`;
     tbody.appendChild(paginationRow);
 }
 
@@ -365,7 +481,6 @@ function showSection(id, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
-    // REPLACEMENT LOGIC: Always use the Database fetch
     if (id === 'my-reports-view' || id === 'empAssign-view') {
         loadDataFromDatabase();
     }
@@ -384,103 +499,54 @@ function openReport(id) {
     document.getElementById('reportModal').style.display = 'block';
 }
 
-// Open task modal with progress update capability
 function openTaskModal(taskId) {
     currentTaskId = taskId;
     const task = allAssignTasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Initialize tracking if not exists
-    if (!task.progress) task.progress = 0;
-    if (!task.updates) task.updates = [];
-
     const modal = document.getElementById('reportModal');
     const modalContent = modal.querySelector('.modal-content');
-
-    const progressColor = task.progress >= 75 ? '#27ae60' :
-        task.progress >= 50 ? '#f39c12' : '#e74c3c';
+    const progress = task.progress || 0;
 
     modalContent.innerHTML = `
         <span class="close" onclick="closeModal()">&times;</span>
-        <h2>${task.assigneeName}</h2>
+        <h2>Task Details</h2>
         
-        <div class="modal-info">
-            <div class="modal-info-item">
-                <strong>department:</strong>
-                <span>${task.dept}</span>
-            </div>
-            <div class="modal-info-item">
-                <strong>assigned:</strong>
-                <span>${new Date(task.assignedDate).toLocaleDateString()}</span>
-            </div>
-            <div class="modal-info-item">
-                <strong>due date:</strong>
-                <span>${new Date(task.dueDate).toLocaleDateString()}</span>
-            </div>
-            <div class="modal-info-item">
-                <strong>status:</strong>
-                <span class="status-badge ${task.status.toLowerCase()}">${task.status}</span>
-            </div>
+        <div class="task-box" style="margin-bottom: 20px;">
+            <strong>Task:</strong> ${task.task}
         </div>
-        
-        <h3>Task Details</h3>
-        <div class="task-box">${task.task}</div>
-        
-        <h3>Progress Tracking</h3>
-        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                <span style="font-weight: 600;">Current Progress:</span>
-                <span style="font-weight: 600; color: ${progressColor}; font-size: 1.2rem;">${task.progress}%</span>
+
+        <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
+            <h3>Update Progress</h3>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>Completion: <strong id="progressValue">${progress}%</strong></span>
             </div>
-            
-            <div style="background: #e0e0e0; height: 30px; border-radius: 15px; overflow: hidden; margin-bottom: 20px;">
-                <div style="width: ${task.progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                    ${task.progress > 15 ? task.progress + '%' : ''}
-                </div>
-            </div>
-            
-            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Update Progress:</label>
-            <input type="range" id="progressSlider" min="0" max="100" value="${task.progress}" 
-                style="width: 100%; height: 8px; margin-bottom: 10px; cursor: pointer;"
-                oninput="document.getElementById('progressValue').textContent = this.value + '%'">
-            
-            <div style="text-align: center; margin-bottom: 15px;">
-                <span id="progressValue" style="font-size: 1.1rem; font-weight: 600; color: ${progressColor};">${task.progress}%</span>
-            </div>
-            
-            <button class="btn" onclick="updateTaskProgress(${task.id})" style="width: 100%;">
-                <i class="fas fa-save"></i> Update Progress
+            <input type="range" id="progressSlider" min="0" max="100" value="${progress}" 
+                   style="width: 100%; margin-bottom: 15px;"
+                   oninput="document.getElementById('progressValue').textContent = this.value + '%'">
+
+            <label style="display:block; margin-bottom: 5px; font-weight:bold;">Progress Note:</label>
+            <textarea id="progressNote" placeholder="What have you done so far?" 
+                      style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
+
+            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 100%; background: #149648;">
+                <i class="fas fa-sync"></i> Sync Progress
             </button>
         </div>
 
-        ${task.updates && task.updates.length > 0 ? `
-            <h3>Progress History</h3>
-            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white;">
-                ${task.updates.map(update => `
-                    <div style="padding: 12px; border-left: 4px solid #149648; background: #f8f9fa; margin-bottom: 12px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <strong style="color: #149648; font-size: 1.1rem;">${update.progress}%</strong>
-                            <span style="color: #666; font-size: 0.85rem;">${new Date(update.date).toLocaleString()}</span>
-                        </div>
-                        ${update.note ? `<p style="margin: 5px 0 0 0; color: #555;">${update.note}</p>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-        ` : '<p style="color: #999; text-align: center; padding: 20px;">No progress updates yet</p>'}
-
-        <div class="action-buttons" style="margin-top: 25px; display: flex; gap: 10px;">
-            <button class="btn-approve" onclick="markTaskComplete(${task.id})" style="flex: 1;">
-                <i class="fas fa-check"></i> Mark Complete
+        <div class="action-buttons" style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn-approve" onclick="markTaskComplete(${task.id})" style="flex: 1; background: #27ae60;">
+                <i class="fas fa-check-double"></i> Mark Completed
             </button>
-            <button class="btn-reject" onclick="deleteTask(${task.id})" style="flex: 1;">
-                <i class="fas fa-trash"></i> Delete Task
+            <button class="btn-reject" onclick="deleteTask(${task.id})" style="flex: 1; background: #e74c3c;">
+                <i class="fas fa-trash"></i> Delete
             </button>
         </div>
     `;
 
     modal.style.display = 'block';
 }
-
 // Update employee's own task progress
 async function updateMyProgress(taskId) {
     const newProgress = parseInt(document.getElementById('progressSlider').value);
@@ -507,7 +573,7 @@ async function updateMyProgress(taskId) {
 
         if (response.ok) {
             showToast('Progress synced to database!', 'success');
-            await loadDataFromDatabase(); // Refresh local variables and UI
+            await loadDataFromDatabase(); 
             closeModal();
         } else {
             showToast('Failed to update server', 'error');
