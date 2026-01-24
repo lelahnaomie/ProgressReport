@@ -145,6 +145,7 @@ async function handleLogin(e) {
     try {
         const response = await fetch('/api/auth', {
             method: 'POST',
+            action: 'login',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
@@ -198,6 +199,7 @@ async function handleSignup(e) {
     try {
         const response = await fetch('/api/auth', {
             method: 'POST',
+            action: 'register',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
