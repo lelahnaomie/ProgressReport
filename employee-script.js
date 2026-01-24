@@ -285,7 +285,7 @@ const myTasks = allAssignTasks;
                     <td class="task-cell">${t.task.substring(0, 30)}${t.task.length > 30 ? '...' : ''}</td>
                     <td>
                         <span class="status-badge ${t.status.toLowerCase()}">${t.status}</span>
-                        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <div style="margin-top:2px; display: flex; align-items: center; gap: 6px;">
                             <div style="flex: 1; background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
                                 <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease;"></div>
                             </div>

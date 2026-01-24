@@ -6,7 +6,7 @@ const client = createClient({
 });
 
 export default async function handler(req, res) {
-  // Only allow POST requests for security
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const { id, progress, status } = req.body;
 
   try {
-    // We target the specific task ID to update its progress
+  
     await client.execute({
       sql: "UPDATE tasks SET progress = ?, status = ? WHERE id = ?",
       args: [progress, status, id]
