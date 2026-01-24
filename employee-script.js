@@ -195,14 +195,23 @@ async function loadDataFromDatabase() {
 }
 
 function loadProfileData() {
-   
-    const nameField = document.getElementById('profileName');
-    const emailField = document.getElementById('profileEmail');
+    const userStr = localStorage.getItem('currentUser');
+    
+    if (!userStr) {
+        window.location.href = 'index.html'; // Redirect if not logged in
+        return;
+    }
 
-    if (nameField) nameField.value = currentUser.name || '';
-    if (emailField) emailField.value = currentUser.email || '';
+    const user = JSON.parse(userStr);
+
+    // Update your HTML elements with the user data
+    document.getElementById('profile-name').textContent = user.name;
+    document.getElementById('profile-email').textContent = user.email;
+    document.getElementById('profile-role').textContent = user.role;
 }
 
+// Run when page loads
+document.addEventListener('DOMContentLoaded', loadProfile);
 async function markTaskComplete(taskId) {
     if (!confirm('Mark this task as 100% finished?')) return;
     
@@ -327,6 +336,7 @@ function setupEventListeners() {
         try {
             const response = await fetch('/api/reports', {
                 method: 'POST',
+                action: 'submit',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reportData)
             });

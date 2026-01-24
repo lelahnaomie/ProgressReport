@@ -303,7 +303,7 @@ function setupTaskForm() {
             task_content: document.getElementById('assignTask').value
         };
 
-        setLoading(true, btn, "Saving to Database...");
+        setLoading(true, btn, "Saving...");
 
         try {
             const response = await fetch('/api/assign-task', {
@@ -972,6 +972,7 @@ async function approveReport() {
     try {
         const response = await fetch('/api/reports', {
             method: 'POST',
+            action: 'updateStatus',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: report.id, status: 'Approved' })
         });
@@ -980,10 +981,10 @@ async function approveReport() {
             report.status = 'Approved';
             updateUI();
             closeModal();
-            showToast('Report approved and synced!', 'success');
+            showToast('Report approved!', 'success');
         }
     } catch (error) {
-        showToast('Failed to update status on server', 'error');
+        showToast('Failed to update status', 'error');
     }
 }
 

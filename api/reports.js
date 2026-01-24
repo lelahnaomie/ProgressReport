@@ -1,7 +1,7 @@
 import { createClient } from '@libsql/client';
 
 export default async function handler(req, res) {
-  // 1. Enforce POST method for all reporting actions 🛡️
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const { action, user_id, id, status, employee_name, department, start_date, end_date, task_summary } = req.body;
 
   try {
-    // --- 📥 ACTION: SUBMIT ---
+    
     if (action === 'submit') {
       if (!user_id || !employee_name || !task_summary) {
         return res.status(400).json({ error: "Missing required report fields" });
@@ -28,9 +28,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: "Report submitted" });
     }
 
-    // --- 🔍 ACTION: GET ---
     else if (action === 'getReports') {
-      // SECURITY: Fetch the user's actual role from the DB instead of trusting the request body 👮
+
       const userResult = await client.execute({
         sql: "SELECT role FROM users WHERE id = ? LIMIT 1",
         args: [user_id]
@@ -42,7 +41,6 @@ export default async function handler(req, res) {
 
       const userRole = userResult.rows[0].role;
 
-      // Admins see everything; Employees only see their own reports 👁️
       const result = userRole === 'admin' 
         ? await client.execute("SELECT * FROM reports ORDER BY id DESC")
         : await client.execute({ 
@@ -53,12 +51,10 @@ export default async function handler(req, res) {
       return res.status(200).json(result.rows);
     }
 
-    // --- ✅ ACTION: UPDATE STATUS ---
     else if (action === 'updateStatus') {
-      // SECURITY: Verify the requester is actually an admin before allowing the update 🚫
       const adminCheck = await client.execute({
         sql: "SELECT role FROM users WHERE id = ? LIMIT 1",
-        args: [user_id] // This should be the ID of the person trying to perform the update
+        args: [user_id] 
       });
 
       if (adminCheck.rows[0]?.role !== 'admin') {

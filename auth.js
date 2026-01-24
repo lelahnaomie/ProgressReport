@@ -146,32 +146,41 @@ async function handleLogin(e) {
         const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // ACTION MUST BE INSIDE THE BODY
-            body: JSON.stringify({ action: 'login', email, password })
+            // The 'action' must be INSIDE the body object
+            body: JSON.stringify({ 
+                action: 'login', 
+                email: email, 
+                password: password 
+            })
         });
 
         const result = await response.json();
 
         if (response.ok) {
+            // 1. Save data for persistence
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('currentUser', JSON.stringify(result.user));
             
-            // Generate a token for your local role verification logic
+            // 2. Generate the role token for your security check
             const token = generateRoleToken(result.user.email, result.user.role);
             localStorage.setItem('roleToken', token);
 
             showToast(`Welcome back, ${result.user.name}!`, 'success');
 
+            // 3. Redirect based on role returned from DB
             setTimeout(() => {
-                window.location.href = result.user.role === 'admin' 
-                    ? 'admin-dashboard.html' 
-                    : 'employee-dashboard.html';
+                if (result.user.role === 'admin') {
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    window.location.href = 'employee-dashboard.html';
+                }
             }, 1000);
         } else {
             showToast(result.error || 'Login failed', 'error');
             setLoading(form, false);
         }
     } catch (error) {
+        console.error("Login error:", error);
         showToast('Server connection failed.', 'error');
         setLoading(form, false);
     }
@@ -190,7 +199,6 @@ async function handleSignup(e) {
         const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // ACTION MUST BE INSIDE THE BODY
             body: JSON.stringify({ action: 'register', name, email, password })
         });
 
@@ -199,7 +207,7 @@ async function handleSignup(e) {
         if (response.ok) {
             showToast(`Welcome ${name}! Please log in.`, 'success');
             setTimeout(() => {
-                toggleAuth();
+                window.location.href = 'employee-dashboard.html'
                 setLoading(form, false);
             }, 1500);
         } else {
@@ -212,7 +220,6 @@ async function handleSignup(e) {
     }
 }
 
-// Verify user access
 function verifyAccess(requiredRole) {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userStr = localStorage.getItem('currentUser');
@@ -226,7 +233,6 @@ function verifyAccess(requiredRole) {
     try {
         const user = JSON.parse(userStr);
 
-        // Verify role
         if (!verifyRoleToken(user.email, user.role, roleToken)) {
             localStorage.clear();
             window.location.href = 'index.html';
