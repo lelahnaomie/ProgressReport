@@ -390,35 +390,85 @@ function openTaskModal(taskId) {
     const task = allAssignTasks.find(t => t.id === taskId);
     if (!task) return;
 
+    // Initialize tracking if not exists
+    if (!task.progress) task.progress = 0;
+    if (!task.updates) task.updates = [];
+
     const modal = document.getElementById('reportModal');
     const modalContent = modal.querySelector('.modal-content');
-    const progress = task.progress || 0;
-    const progressColor = progress >= 75 ? '#27ae60' : progress >= 50 ? '#f39c12' : '#e74c3c';
+
+    const progressColor = task.progress >= 75 ? '#27ae60' :
+        task.progress >= 50 ? '#f39c12' : '#e74c3c';
 
     modalContent.innerHTML = `
         <span class="close" onclick="closeModal()">&times;</span>
-        <h2>Task for ${task.assigneeName}</h2>
+        <h2>${task.assigneeName}</h2>
         
         <div class="modal-info">
-            <div class="modal-info-item"><strong>Dept:</strong> <span>${task.dept}</span></div>
-            <div class="modal-info-item"><strong>Status:</strong> <span class="status-badge ${task.status.toLowerCase()}">${task.status}</span></div>
+            <div class="modal-info-item">
+                <strong>department:</strong>
+                <span>${task.dept}</span>
+            </div>
+            <div class="modal-info-item">
+                <strong>assigned:</strong>
+                <span>${new Date(task.assignedDate).toLocaleDateString()}</span>
+            </div>
+            <div class="modal-info-item">
+                <strong>due date:</strong>
+                <span>${new Date(task.dueDate).toLocaleDateString()}</span>
+            </div>
+            <div class="modal-info-item">
+                <strong>status:</strong>
+                <span class="status-badge ${task.status.toLowerCase()}">${task.status}</span>
+            </div>
         </div>
         
         <h3>Task Details</h3>
         <div class="task-box">${task.task}</div>
         
-        <h3>Current Progress</h3>
-        <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
-            <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s;"></div>
+        <h3>Progress Tracking</h3>
+        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <span style="font-weight: 600;">Current Progress:</span>
+                <span style="font-weight: 600; color: ${progressColor}; font-size: 1.2rem;">${task.progress}%</span>
+            </div>
+            
+            <div style="background: #e0e0e0; height: 30px; border-radius: 15px; overflow: hidden; margin-bottom: 20px;">
+                <div style="width: ${task.progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    ${task.progress > 15 ? task.progress + '%' : ''}
+                </div>
+            </div>
+            
+            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Update Progress:</label>
+            <input type="range" id="progressSlider" min="0" max="100" value="${task.progress}" 
+                style="width: 100%; height: 8px; margin-bottom: 10px; cursor: pointer;"
+                oninput="document.getElementById('progressValue').textContent = this.value + '%'">
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span id="progressValue" style="font-size: 1.1rem; font-weight: 600; color: ${progressColor};">${task.progress}%</span>
+            </div>
+            
+            <button class="btn" onclick="updateTaskProgress(${task.id})" style="width: 100%;">
+                <i class="fas fa-save"></i> Update Progress
+            </button>
         </div>
-        <p><strong>${progress}% Complete</strong></p>
 
-        <h3>Employee Note</h3>
-        <div class="task-box" style="background: #fff9e6; border-left: 4px solid #fcd41d;">
-            ${task.update_note || '<i>No progress notes provided yet.</i>'}
-        </div>
+        ${task.updates && task.updates.length > 0 ? `
+            <h3>Progress History</h3>
+            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white;">
+                ${task.updates.map(update => `
+                    <div style="padding: 12px; border-left: 4px solid #149648; background: #f8f9fa; margin-bottom: 12px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong style="color: #149648; font-size: 1.1rem;">${update.progress}%</strong>
+                            <span style="color: #666; font-size: 0.85rem;">${new Date(update.date).toLocaleString()}</span>
+                        </div>
+                        ${update.note ? `<p style="margin: 5px 0 0 0; color: #555;">${update.note}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        ` : '<p style="color: #999; text-align: center; padding: 20px;">No progress updates yet</p>'}
 
-       <div class="action-buttons" style="margin-top: 25px; display: flex; gap: 10px;">
+        <div class="action-buttons" style="margin-top: 25px; display: flex; gap: 10px;">
             <button class="btn-approve" onclick="markTaskComplete(${task.id})" style="flex: 1;">
                 <i class="fas fa-check"></i> Mark Complete
             </button>
@@ -427,8 +477,10 @@ function openTaskModal(taskId) {
             </button>
         </div>
     `;
+
     modal.style.display = 'block';
 }
+
 // Update employee's own task progress
 async function updateMyProgress(taskId) {
     const newProgress = parseInt(document.getElementById('progressSlider').value);
