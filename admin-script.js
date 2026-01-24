@@ -269,12 +269,13 @@ function setupTaskForm() {
         const assigneeName = document.getElementById('assignName').value.trim();
         const btn = e.submitter;
 
-        // VALIDATION: Check against the list we fetched from the database
+        // 1. Validation check
         if (!validEmployees.includes(assigneeName)) {
-            showToast(`Employee "${assigneeName}" does not exist in the database.`, 'error');
+            showToast(`Employee "${assigneeName}" not found.`, 'error');
             return;
         }
 
+        // 2. Data to send
         const taskData = {
             assignee_name: assigneeName,
             department: document.getElementById('assignDept').value,
@@ -282,9 +283,10 @@ function setupTaskForm() {
             task_content: document.getElementById('assignTask').value
         };
 
-        setLoading(true, btn, "Assigning...");
+        setLoading(true, btn, "Saving to Database...");
 
         try {
+            // 3. THE CRITICAL FETCH CALL
             const response = await fetch('/api/assign-task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -292,21 +294,21 @@ function setupTaskForm() {
             });
 
             if (response.ok) {
-                showToast('Task assigned and saved to database!', 'success');
+                showToast('Task stored in Database!', 'success');
                 assignform.reset();
-                await loadData(); // Refresh the table and the employee list
+                // 4. Reload everything from the database (not localStorage)
+                await loadData(); 
             } else {
-                throw new Error('Failed to assign task');
+                const err = await response.json();
+                showToast(`Error: ${err.error}`, 'error');
             }
         } catch (error) {
-            console.error(error);
-            showToast('Connection error. Task not saved.', 'error');
+            showToast('Server connection failed.', 'error');
         } finally {
             setLoading(false, btn);
         }
     });
 }
-
 // Update tasks table view
 function updateTasksView() {
     const tbody = document.getElementById('task-row');

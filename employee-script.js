@@ -156,8 +156,6 @@ async function loadDataFromDatabase() {
             }));
         }
 
-        // 2. Fetch Tasks (CRITICAL FIX)
-        // We use encodeURIComponent to handle spaces in names (e.g., "John Doe")
         const taskRes = await fetch(`/api/get-tasks?assignee_name=${encodeURIComponent(currentUser.name)}`);
         const taskRows = await taskRes.json();
 
@@ -359,21 +357,18 @@ function updateCounter(id, value) {
 
 // navigation logic
 function showSection(id, el) {
-    document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
-    const target = document.getElementById(id);
-    if (target) target.style.display = 'block';
+    document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
+    const target = document.getElementById(id);
+    if (target) target.style.display = 'block';
 
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    if (el) el.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
 
-    // FIX: Call the database fetch instead of the local storage fetch
-    if (id === 'my-reports-view') {
-        loadDataFromDatabase(); 
-    } else if (id === 'empAssign-view') {
-        loadData(); // Keep this for Tasks until we move Tasks to Turso too
-    }
+    // REPLACEMENT LOGIC: Always use the Database fetch
+    if (id === 'my-reports-view' || id === 'empAssign-view') {
+        loadDataFromDatabase(); 
+    }
 }
-
 function openReport(id) {
     currentReportId = id;
     const r = allReports.find(x => x.id == id);
@@ -493,42 +488,42 @@ function openTaskModal(taskId) {
 }
 
 // Update employee's own task progress
-function updateMyProgress(taskId) {
-    const task = allAssignTasks.find(t => t.id === taskId);
-    if (!task) return;
+async function updateMyProgress(taskId) {
+    const newProgress = parseInt(document.getElementById('progressSlider').value);
+    const noteField = document.getElementById('progressNote');
+    const note = noteField ? noteField.value.trim() : '';
 
-    const newProgress = parseInt(document.getElementById('progressSlider').value);
-    const noteField = document.getElementById('progressNote');
-    const note = noteField ? noteField.value.trim() : '';
+    let newStatus = 'In Progress';
+    if (newProgress === 100) newStatus = 'Completed';
+    if (newProgress === 0) newStatus = 'Pending';
 
-    // Update progress
-    task.progress = newProgress;
+    setLoading(true);
 
-    // Add to history
-    task.updates = task.updates || [];
-    task.updates.unshift({
-        progress: newProgress,
-        date: new Date().toISOString(),
-        note: note || `Progress updated to ${newProgress}% by ${currentUser.name}`
-    });
+    try {
+        const response = await fetch('/api/update-task-progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: taskId,
+                progress: newProgress,
+                status: newStatus,
+                note: note
+            })
+        });
 
-    // Auto-update status based on progress
-    if (newProgress === 100) {
-        task.status = 'Completed';
-    } else if (newProgress > 0) {
-        task.status = 'In Progress';
-    } else {
-        task.status = 'Pending';
-    }
-
-    saveTaskData();
-    updateTaskTable();
-    showToast('Your progress has been updated!', 'success');
-
-    // Refresh the modal to show updated data
-    openTaskModal(taskId);
+        if (response.ok) {
+            showToast('Progress synced to database!', 'success');
+            await loadDataFromDatabase(); // Refresh local variables and UI
+            closeModal();
+        } else {
+            showToast('Failed to update server', 'error');
+        }
+    } catch (error) {
+        showToast('Connection error', 'error');
+    } finally {
+        setLoading(false);
+    }
 }
-
 function closeModal() {
     const modal = document.getElementById('reportModal');
     if (modal) modal.style.display = 'none';

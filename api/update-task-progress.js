@@ -6,16 +6,23 @@ const client = createClient({
 });
 
 export default async function handler(req, res) {
-  const { id, progress, status, update_note } = req.body;
+  // Only allow POST requests for security
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { id, progress, status } = req.body;
+
   try {
-    // 1. Update the main task progress
+    // We target the specific task ID to update its progress
     await client.execute({
       sql: "UPDATE tasks SET progress = ?, status = ? WHERE id = ?",
       args: [progress, status, id]
     });
-    // 2. (Optional) Log to a history table if you have one
+
     return res.status(200).json({ success: true });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+  } catch (error) {
+    console.error("Database Update Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }
