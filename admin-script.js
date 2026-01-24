@@ -179,23 +179,52 @@ async function loadData() {
                 task: row.task_content,
                 status: row.status,
                 progress: row.progress || 0,
-                dueDate: row.due_date
+                dueDate: row.due_date,
+                update_note: row.update_note // Added this for your modal history
             }));
         }
 
-        // 3. Fetch Valid Employees (for the validation check)
+        // 3. Fetch Valid Employees (from database, not localstorage)
         const empRes = await fetch('/api/get-employees');
         if (empRes.ok) {
             validEmployees = await empRes.json();
         }
 
-        // Refresh the HTML tables
+        // Refresh UI
         updateUI(); 
         updateTasksView();
 
     } catch (error) {
         console.error("Admin Load Error:", error);
         showToast("Database sync failed", "error");
+    } finally {
+        setLoading(false);
+    }
+}
+async function loadAdminTasksFromDatabase() {
+    setLoading(true);
+    try {
+        // Calling your API without an assignee_name gets ALL tasks for the Admin
+        const res = await fetch('/api/get-tasks');
+        if (!res.ok) throw new Error("Failed to fetch tasks");
+        
+        const rows = await res.json();
+        
+        // Map database columns to your frontend variable names
+        allAssignTasks = rows.map(row => ({
+            id: row.id,
+            assignedDate: row.assigned_date,
+            assigneeName: row.assignee_name,
+            dept: row.department,
+            task: row.task_content,
+            status: row.status,
+            progress: row.progress || 0,
+            dueDate: row.due_date
+        }));
+
+        updateTaskTable(); // Re-render the UI with database data
+    } catch (error) {
+        console.error("Admin sync error:", error);
     } finally {
         setLoading(false);
     }
@@ -265,19 +294,10 @@ function setupTaskForm() {
 
     assignform.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        const assigneeName = document.getElementById('assignName').value.trim();
         const btn = e.submitter;
 
-        // 1. Validation check
-        if (!validEmployees.includes(assigneeName)) {
-            showToast(`Employee "${assigneeName}" not found.`, 'error');
-            return;
-        }
-
-        // 2. Data structure matching your API
         const taskData = {
-            assignee_name: assigneeName,
+            assignee_name: document.getElementById('assignName').value.trim(),
             department: document.getElementById('assignDept').value,
             due_date: document.getElementById('dueDate').value,
             task_content: document.getElementById('assignTask').value
@@ -286,7 +306,6 @@ function setupTaskForm() {
         setLoading(true, btn, "Saving to Database...");
 
         try {
-            // 3. Send to Turso via API
             const response = await fetch('/api/assign-task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -294,19 +313,16 @@ function setupTaskForm() {
             });
 
             if (response.ok) {
-                showToast('Task stored in Database!', 'success');
+                showToast('Task saved to Turso database!', 'success');
                 assignform.reset();
-                
-                // 4. Force a fresh pull from the Database (Turso)
-                // This ensures what you see matches exactly what is stored
-                await loadData(); 
+                // IMPORTANT: Fetch the fresh list from the database immediately
+                await loadAdminTasksFromDatabase(); 
             } else {
-                const err = await response.json();
-                showToast(`Error: ${err.error}`, 'error');
+                throw new Error('Failed to save to database');
             }
         } catch (error) {
-            console.error("Task Save Error:", error);
-            showToast('Server connection failed.', 'error');
+            console.error(error);
+            showToast('Sync error. Check connection.', 'error');
         } finally {
             setLoading(false, btn);
         }
@@ -317,48 +333,45 @@ function updateTasksView() {
     const tbody = document.getElementById('task-row');
     if (!tbody) return;
 
-    // Check if there are no tasks
     if (allAssignTasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-light);">no tasks assigned yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #888;">No tasks assigned yet</td></tr>';
         return;
     }
 
-    // Calculate pagination
-    const totalPages = Math.ceil(allAssignTasks.length / itemsPerPage);
     const startIndex = (currentPage.tasks - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedData = allAssignTasks.slice(startIndex, endIndex);
+    const paginatedData = allAssignTasks.slice(startIndex, startIndex + itemsPerPage);
 
     tbody.innerHTML = paginatedData.map((t, index) => {
-        const progressColor = t.progress >= 75 ? '#27ae60' :
-            t.progress >= 50 ? '#f39c12' : '#e74c3c';
-
         const progress = t.progress || 0;
+        const progressColor = progress >= 75 ? '#27ae60' : progress >= 50 ? '#f39c12' : '#e74c3c';
 
         return `
             <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
-                <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
+                <td class="id-cell">${startIndex + index + 1}</td>
+                <td style="font-size: 0.85rem;">${new Date(t.assignedDate).toLocaleDateString()}</td>
                 <td>${t.assigneeName}</td>
                 <td>${t.dept}</td>
-                <td class="task-cell">${t.task.substring(0, 40)}${t.task.length > 40 ? '...' : ''}</td>
-                <td>
-                    <span class="status-badge ${t.status.toLowerCase()}">${t.status}</span>
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                        <div style="flex: 1; background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
-                            <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease;"></div>
+                <td class="task-cell" style="font-size: 0.85rem;">${t.task.substring(0, 30)}${t.task.length > 30 ? '...' : ''}</td>
+                <td style="padding: 4px 10px;">
+                    <span class="status-badge ${t.status.toLowerCase()}" style="padding: 1px 6px; font-size: 0.65rem;">${t.status}</span>
+                    <div style="margin-top: 3px; display: flex; align-items: center; gap: 5px;">
+                        <div style="flex: 1; background: #e0e0e0; height: 3px; border-radius: 2px; overflow: hidden;">
+                            <div style="width: ${progress}%; background: ${progressColor}; height: 100%;"></div>
                         </div>
-                        <span style="font-size: 0.75rem; color: #666; min-width: 35px;">${progress}%</span>
+                        <span style="font-size: 0.6rem; color: #666;">${progress}%</span>
                     </div>
                 </td>
-                <td><i class="fas fa-eye"></i></td>
+                <td class="action-cell">
+                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem; pointer-events: none;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
             </tr>
         `;
     }).join('');
 
-    // Add pagination controls if needed
     addPaginationControls('task-row', allAssignTasks.length, currentPage.tasks, 'tasks');
 }
-
 // Open task modal with progress tracking
 function openTaskModal(taskId) {
     currentTaskId = taskId;
@@ -514,16 +527,24 @@ function markTaskComplete(taskId) {
 }
 
 // Delete task
-function deleteTask(taskId) {
-    if (!confirm('Are you sure you want to delete this task? This cannot be undone!')) return;
+async function deleteTask(taskId) {
+    if (!confirm('Permanently delete this task from the database?')) return;
 
-    const index = allAssignTasks.findIndex(t => t.id === taskId);
-    if (index !== -1) {
-        allAssignTasks.splice(index, 1);
-        saveData();
-        updateTasksView();
-        closeModal();
-        showToast('Task deleted successfully!', 'warning');
+    try {
+        const response = await fetch('/api/delete-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: taskId })
+        });
+
+        if (response.ok) {
+            allAssignTasks = allAssignTasks.filter(t => t.id !== taskId);
+            updateTasksView();
+            closeModal();
+            showToast('Task removed from cloud', 'warning');
+        }
+    } catch (error) {
+        showToast('Delete failed', 'error');
     }
 }
 
@@ -966,19 +987,28 @@ async function approveReport() {
     }
 }
 
-function rejectReport() {
-    if (confirm('are you sure you want to reject this report?')) {
-        const report = allReports.find(r => r.id === currentReportId);
-        if (report) {
+async function rejectReport() {
+    if (!confirm('Are you sure you want to reject this report?')) return;
+    const report = allReports.find(r => r.id === currentReportId);
+    if (!report) return;
+
+    try {
+        const response = await fetch('/api/update-report-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: report.id, status: 'Rejected' })
+        });
+
+        if (response.ok) {
             report.status = 'Rejected';
-            saveData();
             updateUI();
             closeModal();
-            showToast('report rejected', 'error');
+            showToast('Report rejected and synced!', 'error');
         }
+    } catch (error) {
+        showToast('Failed to update server', 'error');
     }
 }
-
 // export functions
 function exportPDF() {
     const { jsPDF } = window.jspdf;

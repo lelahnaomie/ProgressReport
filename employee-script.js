@@ -258,51 +258,49 @@ function updateReportsTable() {
 }
 
 function updateTaskTable() {
-    const tbody = document.getElementById('task-row');
-    if (!tbody) return;
+    const tbody = document.getElementById('task-row');
+    if (!tbody) return;
 
-const myTasks = allAssignTasks;
-    if (myTasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">No tasks assigned to you yet.</td></tr>';
-    } else {
-        const sorted = [...myTasks].sort((a, b) => b.id - a.id);
+    if (allAssignTasks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #888;">No tasks found.</td></tr>';
+        return;
+    }
 
-        const totalPages = Math.ceil(sorted.length / itemsPerPage);
-        const startIndex = (currentPage.tasks - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedData = sorted.slice(startIndex, endIndex);
+    const sorted = [...allAssignTasks].sort((a, b) => b.id - a.id);
+    const startIndex = (currentPage.tasks - 1) * itemsPerPage;
+    const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage);
 
-        tbody.innerHTML = paginatedData.map(t => {
-            const progress = t.progress || 0;
-            const progressColor = progress >= 75 ? '#27ae60' :
-                progress >= 50 ? '#f39c12' : '#e74c3c';
+    tbody.innerHTML = paginatedData.map((t, index) => {
+        const progress = t.progress || 0;
+        const progressColor = progress >= 75 ? '#27ae60' : progress >= 50 ? '#f39c12' : '#e74c3c';
 
-            return `
-              <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
-                <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
+        return `
+            <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
+                <td class="id-cell">${startIndex + index + 1}</td>
+                <td class="date-cell">${new Date(t.assignedDate).toLocaleDateString()}</td>
                 <td>${t.assigneeName}</td>
                 <td>${t.dept}</td>
-                <td class="task-cell">${t.task.substring(0, 40)}${t.task.length > 40 ? '...' : ''}</td>
-                <td>
-                    <span class="status-badge ${t.status.toLowerCase()}">${t.status}</span>
-                    <div style="margin-top:0px; display: flex; align-items: center; gap:2px;">
-                        <div style="flex: 1; background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
-                            <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease;"></div>
+                <td class="task-cell">${t.task.substring(0, 25)}${t.task.length > 25 ? '...' : ''}</td>
+                <td style="padding: 4px 10px;">
+                    <span class="status-badge ${t.status.toLowerCase()}" style="padding: 1px 6px; font-size: 0.65rem;">${t.status}</span>
+                    <div style="margin-top: 3px; display: flex; align-items: center; gap: 5px;">
+                        <div style="flex: 1; background: #e0e0e0; height: 3px; border-radius: 2px; overflow: hidden;">
+                            <div style="width: ${progress}%; background: ${progressColor}; height: 100%;"></div>
                         </div>
-                        <span style="font-size: 0.75rem; color: #666; min-width: 35px;">${progress}%</span>
+                        <span style="font-size: 0.6rem; color: #666;">${progress}%</span>
                     </div>
                 </td>
-                <td><i class="fas fa-eye"></i></td>
+                <td class="action-cell">
+                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
             </tr>
-            `;
-        }).join('');
+        `;
+    }).join('');
 
-        addPaginationControls('task-row', sorted.length, currentPage.tasks, 'tasks');
-    }
-
-    updateCounter('totalTasks', myTasks.length);
+    updateCounter('totalTasks', allAssignTasks.length);
 }
-
 function addPaginationControls(tableId, totalItems, currentPageNum, type) {
     const tbody = document.getElementById(tableId);
     if (!tbody) return;
@@ -385,108 +383,46 @@ function openReport(id) {
 
 // Open task modal with progress update capability
 function openTaskModal(taskId) {
-    currentTaskId = taskId;
-    const task = allAssignTasks.find(t => t.id === taskId);
-    if (!task) return;
+    currentTaskId = taskId;
+    const task = allAssignTasks.find(t => t.id === taskId);
+    if (!task) return;
 
-    // Initialize tracking if not exists
-    if (!task.progress) task.progress = 0;
-    if (!task.updates) task.updates = [];
+    const modal = document.getElementById('reportModal');
+    const modalContent = modal.querySelector('.modal-content');
+    const progress = task.progress || 0;
+    const progressColor = progress >= 75 ? '#27ae60' : progress >= 50 ? '#f39c12' : '#e74c3c';
 
-    const modal = document.getElementById('reportModal');
-    const modalContent = modal.querySelector('.modal-content');
+    modalContent.innerHTML = `
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Task for ${task.assigneeName}</h2>
+        
+        <div class="modal-info">
+            <div class="modal-info-item"><strong>Dept:</strong> <span>${task.dept}</span></div>
+            <div class="modal-info-item"><strong>Status:</strong> <span class="status-badge ${task.status.toLowerCase()}">${task.status}</span></div>
+        </div>
+        
+        <h3>Task Details</h3>
+        <div class="task-box">${task.task}</div>
+        
+        <h3>Current Progress</h3>
+        <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
+            <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s;"></div>
+        </div>
+        <p><strong>${progress}% Complete</strong></p>
 
-    const progressColor = task.progress >= 75 ? '#27ae60' :
-        task.progress >= 50 ? '#f39c12' : '#e74c3c';
+        <h3>Employee Note</h3>
+        <div class="task-box" style="background: #fff9e6; border-left: 4px solid #fcd41d;">
+            ${task.update_note || '<i>No progress notes provided yet.</i>'}
+        </div>
 
-    // Check if task is completed
-    const isCompleted = task.status === 'Completed' || task.progress === 100;
-
-    modalContent.innerHTML = `
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h2>${task.assigneeName}</h2>
-        
-        <div class="modal-info">
-            <div class="modal-info-item">
-                <strong>department:</strong>
-                <span>${task.dept}</span>
-            </div>
-            <div class="modal-info-item">
-                <strong>assigned:</strong>
-                <span>${new Date(task.assignedDate).toLocaleDateString()}</span>
-            </div>
-            <div class="modal-info-item">
-                <strong>due date:</strong>
-                <span>${new Date(task.dueDate).toLocaleDateString()}</span>
-            </div>
-            <div class="modal-info-item">
-                <strong>status:</strong>
-                <span class="status-badge ${task.status.toLowerCase()}">${task.status}</span>
-            </div>
-        </div>
-        
-        <h3>Task Details</h3>
-        <div class="task-box">${task.task}</div>
-        
-        <h3>Your Progress</h3>
-        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                <span style="font-weight: 600;">Current Progress:</span>
-                <span style="font-weight: 600; color: ${progressColor}; font-size: 1.2rem;">${task.progress}%</span>
-            </div>
-            
-            <div style="background: #e0e0e0; height: 30px; border-radius: 15px; overflow: hidden; margin-bottom: 20px;">
-                <div style="width: ${task.progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                    ${task.progress > 15 ? task.progress + '%' : ''}
-                </div>
-            </div>
-            
-            ${!isCompleted ? `
-                <label style="display: block; margin-bottom: 10px; font-weight: 600;">Update Your Progress:</label>
-                <input type="range" id="progressSlider" min="0" max="100" value="${task.progress}" 
-                    style="width: 100%; height: 8px; margin-bottom: 10px; cursor: pointer;"
-                    oninput="document.getElementById('progressValue').textContent = this.value + '%'">
-                
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <span id="progressValue" style="font-size: 1.1rem; font-weight: 600; color: ${progressColor};">${task.progress}%</span>
-                </div>
-                
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Progress Note (Optional):</label>
-                <textarea id="progressNote" 
-                    placeholder="Add a note about your progress..."
-                    rows="3"
-                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; font-family: inherit;"></textarea>
-                
-                <button class="btn" onclick="updateMyProgress(${task.id})" style="width: 100%;">
-                    <i class="fas fa-save"></i> Update My Progress
-                </button>
-            ` : `
-                <div style="text-align: center; padding: 20px; background: #d4edda; border-radius: 8px; color: #155724;">
-                    <i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                    <p style="margin: 0; font-weight: 600;">Task Completed!</p>
-                </div>
-            `}
-        </div>
-
-        ${task.updates && task.updates.length > 0 ? `
-            <h3>Progress History</h3>
-            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white;">
-                ${task.updates.map(update => `
-                    <div style="padding: 12px; border-left: 4px solid #149648; background: #f8f9fa; margin-bottom: 12px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <strong style="color: #149648; font-size: 1.1rem;">${update.progress}%</strong>
-                            <span style="color: #666; font-size: 0.85rem;">${new Date(update.date).toLocaleString()}</span>
-                        </div>
-                        ${update.note ? `<p style="margin: 5px 0 0 0; color: #555;">${update.note}</p>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-        ` : '<p style="color: #999; text-align: center; padding: 20px;">No progress updates yet</p>'}
-    `;
-
-    modal.style.display = 'block';
+        <div class="action-buttons" style="margin-top: 20px;">
+            <button class="btn-reject" onclick="deleteTask(${task.id})">
+                <i class="fas fa-trash"></i> Delete Task Permanent
+            </button>
+        </div>
+    `;
+    modal.style.display = 'block';
 }
-
 // Update employee's own task progress
 async function updateMyProgress(taskId) {
     const newProgress = parseInt(document.getElementById('progressSlider').value);
