@@ -213,7 +213,7 @@ function loadProfileData() {
     document.getElementById('profileDept').value = user.dept || currentUser.dept || 'Not Assigned';
 }
 // Run when page loads
-document.addEventListener('DOMContentLoaded', loadProfile);
+document.addEventListener('DOMContentLoaded', loadProfileData);
 async function markTaskComplete(taskId) {
     if (!confirm('Mark this task as 100% finished?')) return;
     
@@ -336,12 +336,14 @@ function setupEventListeners() {
         };
 
         try {
-            const response = await fetch('/api/reports', {
-                method: 'POST',
-                action: 'submit',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(reportData)
-            });
+          const response = await fetch('/api/reports', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        action: 'submit', 
+        ...reportData
+    })
+});
 
             if (response.ok) {
                 showToast('Report submitted successfully!', 'success');
