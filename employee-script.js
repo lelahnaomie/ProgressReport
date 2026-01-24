@@ -294,7 +294,7 @@ function updateTaskTable() {
                     </div>
                 </td>
                 <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem;">
+                    <button class="view-btn"  style="padding: 4px 10px; font-size: 0.75rem; border-style: none;">
                         <i class="fas fa-eye"></i> View
                     </button>
                 </td>

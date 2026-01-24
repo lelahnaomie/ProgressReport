@@ -191,7 +191,7 @@ async function loadData() {
         }
 
         // Refresh UI
-        updateUI();
+        updateUI(); 
         updateTasksView();
 
     } catch (error) {
@@ -207,9 +207,9 @@ async function loadAdminTasksFromDatabase() {
         // Calling your API without an assignee_name gets ALL tasks for the Admin
         const res = await fetch('/api/get-tasks');
         if (!res.ok) throw new Error("Failed to fetch tasks");
-
+        
         const rows = await res.json();
-
+        
         // Map database columns to your frontend variable names
         allAssignTasks = rows.map(row => ({
             id: row.id,
@@ -316,7 +316,7 @@ function setupTaskForm() {
                 showToast('Task saved to Turso database!', 'success');
                 assignform.reset();
                 // IMPORTANT: Fetch the fresh list from the database immediately
-                await loadAdminTasksFromDatabase();
+                await loadAdminTasksFromDatabase(); 
             } else {
                 throw new Error('Failed to save to database');
             }
