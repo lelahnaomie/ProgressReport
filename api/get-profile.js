@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     const result = await client.execute({
-      sql: "SELECT id, name, email, department FROM users WHERE id = ? LIMIT 1",
+      sql: "SELECT id, name, email, FROM users WHERE id = ? LIMIT 1",
       args: [id]
     });
 

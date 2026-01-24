@@ -8,7 +8,7 @@ const client = createClient({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { id, name, email, department } = req.body;
+  const { id, name, email} = req.body;
 
   try {
 
@@ -21,18 +21,12 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const currentDeptInDb = userResult.rows[0].department;
-
-    const finalDepartment = (currentDeptInDb && currentDeptInDb !== "") 
-                             ? currentDeptInDb 
-                             : department;
-
 
     await client.execute({
       sql: `UPDATE users 
-            SET name = ?, email = ?, department = ? 
+            SET name = ?, email = ?
             WHERE id = ?`,
-      args: [name, email,finalDepartment, id]
+      args: [name, email, id]
     });
 
     

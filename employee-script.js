@@ -193,19 +193,14 @@ async function loadDataFromDatabase() {
         setLoading(false);
     }
 }
+
 function loadProfileData() {
    
-    document.getElementById('profileName').value = currentUser.name || '';
-    document.getElementById('profileEmail').value = currentUser.email || '';
-    
-    const deptSelect = document.getElementById('profileDept');
-    if (currentUser.dept) {
-        deptSelect.value = currentUser.dept;
-      
-        deptSelect.disabled = true; 
-        deptSelect.style.backgroundColor = "#f0f0f0";
-        deptSelect.title = "Department can only be changed by Admin";
-    }
+    const nameField = document.getElementById('profileName');
+    const emailField = document.getElementById('profileEmail');
+
+    if (nameField) nameField.value = currentUser.name || '';
+    if (emailField) emailField.value = currentUser.email || '';
 }
 
 async function markTaskComplete(taskId) {
@@ -640,7 +635,7 @@ async function saveProfile() {
         id: currentUser.id,
         name: document.getElementById('profileName').value,
         email: document.getElementById('profileEmail').value,
-        department: document.getElementById('profileDept').value
+        // department: document.getElementById('profileDept').value
     };
 
     try {
@@ -656,9 +651,9 @@ async function saveProfile() {
             currentUser.name = profileData.name;
             currentUser.email = profileData.email;
             
-            if (profileData.department) {
-                currentUser.dept = profileData.department; 
-            }
+            // if (profileData.department) {
+            //     currentUser.dept = profileData.department; 
+            // }
 
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
