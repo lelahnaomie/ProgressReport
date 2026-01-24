@@ -273,7 +273,7 @@ async function updateMyProgress(taskId, overrideProgress = null, overrideNote = 
         });
 
         if (response.ok) {
-            showToast('Progress synced to database!', 'success');
+            showToast('Progress updated!', 'success');
             await loadDataFromDatabase(); 
             closeModal();
         } else {
@@ -306,7 +306,7 @@ function setupEventListeners() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = form.querySelector('button[type="submit"]');
-        setLoading(true, submitBtn, "Syncing to Turso...");
+        setLoading(true, submitBtn, "Submitting...");
 
         const reportData = {
             user_id: currentUser.id,
@@ -361,8 +361,8 @@ function updateReportsTable() {
  <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
 <td class="status-cell"><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
    <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem; pointer-events: none;">
-                        <i class="fas fa-eye"></i> View
+                    <button class="view-btn" style="padding: 4px 10px; border: none; font-size: 0.75rem; pointer-events: none;">
+                        <i class="fas fa-eye"></i> 
                     </button>
                 </td>
 `).join('');
@@ -410,8 +410,8 @@ function updateTaskTable() {
                     </div>
                 </td>
                 <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem; pointer-events: none;">
-                        <i class="fas fa-eye"></i> View
+                    <button class="view-btn" style="padding: 4px 10px; border: none; font-size: 0.75rem; pointer-events: none;">
+                        <i class="fas fa-eye"></i> 
                     </button>
                 </td>
             </tr>
@@ -531,7 +531,7 @@ function openTaskModal(taskId) {
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
             <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 100%; background: #149648;">
-                <i class="fas fa-sync"></i> Sync Progress
+                <i class="fas fa-sync"></i> Progress
             </button>
         </div>
 
@@ -572,7 +572,7 @@ async function updateMyProgress(taskId) {
         });
 
         if (response.ok) {
-            showToast('Progress synced to database!', 'success');
+            showToast('Progress updated!', 'success');
             await loadDataFromDatabase(); 
             closeModal();
         } else {
@@ -620,37 +620,52 @@ function handleLogout() {
 }
 
 // Profile functions
-function saveProfile() {
+async function saveProfile() {
     const saveBtn = document.querySelector('#profile-view .btn');
     setLoading(true, saveBtn, "Saving...");
 
-    setTimeout(() => {
-        const name = document.getElementById('profileName').value;
-        const email = document.getElementById('profileEmail').value;
-        const dept = document.getElementById('profileDept').value;
-        const phone = document.getElementById('profilePhone').value;
+    const profileData = {
+        id: currentUser.id,
+        name: document.getElementById('profileName').value,
+        email: document.getElementById('profileEmail').value,
+        department: document.getElementById('profileDept').value
+    };
 
-        currentUser.name = name;
-        currentUser.email = email;
-        currentUser.dept = dept;
-        currentUser.phone = phone;
+    try {
+        const response = await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData)
+        });
 
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        const result = await response.json();
 
-        const users = JSON.parse(localStorage.getItem('cpUsers') || '[]');
-        const userIndex = users.findIndex(u => u.email === currentUser.email);
-        if (userIndex !== -1) {
-            users[userIndex] = currentUser;
-            localStorage.setItem('cpUsers', JSON.stringify(users));
+        if (response.ok) {
+            currentUser.name = profileData.name;
+            currentUser.email = profileData.email;
+            
+            if (profileData.department) {
+                currentUser.dept = profileData.department; 
+            }
+
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            updateUserHeader();
+            loadProfileData(); 
+            showToast('Profile saved successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to update profile', 'error');
         }
-
-        updateUserHeader();
+    } catch (error) {
+        showToast('Server connection error', 'error');
+    } finally {
         setLoading(false, saveBtn);
-        showToast('Profile updated successfully!', 'success');
-    }, 1000);
+    }
 }
 
 function saveSettings() {
+    const saveBtn = document.querySelector('#settings-view .btn');
+    setLoading(true, saveBtn, "Saving...");
     const emailNotif = document.getElementById('emailNotif').value;
     const reminderPref = document.getElementById('reminderPref').value;
     const langPref = document.getElementById('langPref').value;
@@ -663,6 +678,7 @@ function saveSettings() {
 
     localStorage.setItem('employeeSettings', JSON.stringify(settings));
     showToast('Settings saved successfully!', 'success');
+    setLoading(false, saveBtn);
 }
 
 window.onclick = (e) => {
