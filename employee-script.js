@@ -154,7 +154,7 @@ async function loadDataFromDatabase() {
                 loadProfileData();
             }
         }
-        const reportRes = await fetch(`/api/get-reports?user_id=${currentUser.id}&role=${currentUser.role}`);
+        const reportRes = await fetch(`/api/reports?user_id=${currentUser.id}&role=${currentUser.role}`);
         if (reportRes.ok) {
             const reportRows = await reportRes.json();
             allReports = reportRows.map(row => ({
@@ -325,7 +325,7 @@ function setupEventListeners() {
         };
 
         try {
-            const response = await fetch('/api/submit-report', {
+            const response = await fetch('/api/reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reportData)

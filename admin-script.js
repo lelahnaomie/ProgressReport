@@ -152,7 +152,7 @@ async function loadData() {
     setLoading(true);
     try {
         // 1. Fetch Reports from Turso
-        const reportRes = await fetch('/api/get-reports?role=admin');
+        const reportRes = await fetch('/api/reports?action=getReports&user_id=1');
         if (reportRes.ok) {
             const rows = await reportRes.json();
             allReports = rows.map(row => ({
@@ -970,7 +970,7 @@ async function approveReport() {
     if (!report) return;
 
     try {
-        const response = await fetch('/api/update-report-status', {
+        const response = await fetch('/api/reports', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: report.id, status: 'Approved' })
@@ -993,7 +993,7 @@ async function rejectReport() {
     if (!report) return;
 
     try {
-        const response = await fetch('/api/update-report-status', {
+        const response = await fetch('/api/reports', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: report.id, status: 'Rejected' })
