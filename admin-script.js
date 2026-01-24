@@ -275,7 +275,7 @@ function setupTaskForm() {
             return;
         }
 
-        // 2. Data to send
+        // 2. Data structure matching your API
         const taskData = {
             assignee_name: assigneeName,
             department: document.getElementById('assignDept').value,
@@ -286,7 +286,7 @@ function setupTaskForm() {
         setLoading(true, btn, "Saving to Database...");
 
         try {
-            // 3. THE CRITICAL FETCH CALL
+            // 3. Send to Turso via API
             const response = await fetch('/api/assign-task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -296,13 +296,16 @@ function setupTaskForm() {
             if (response.ok) {
                 showToast('Task stored in Database!', 'success');
                 assignform.reset();
-                // 4. Reload everything from the database (not localStorage)
+                
+                // 4. Force a fresh pull from the Database (Turso)
+                // This ensures what you see matches exactly what is stored
                 await loadData(); 
             } else {
                 const err = await response.json();
                 showToast(`Error: ${err.error}`, 'error');
             }
         } catch (error) {
+            console.error("Task Save Error:", error);
             showToast('Server connection failed.', 'error');
         } finally {
             setLoading(false, btn);
@@ -326,13 +329,10 @@ function updateTasksView() {
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = allAssignTasks.slice(startIndex, endIndex);
 
-    // Build table rows
     tbody.innerHTML = paginatedData.map((t, index) => {
-        // Determine progress bar color
         const progressColor = t.progress >= 75 ? '#27ae60' :
             t.progress >= 50 ? '#f39c12' : '#e74c3c';
 
-        // Initialize progress if not exists
         const progress = t.progress || 0;
 
         return `

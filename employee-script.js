@@ -258,49 +258,48 @@ function updateReportsTable() {
 }
 
 function updateTaskTable() {
-    const tbody = document.getElementById('task-row');
-    if (!tbody) return;
+    const tbody = document.getElementById('task-row');
+    if (!tbody) return;
 
-const myTasks = allAssignTasks;
-    if (myTasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">No tasks assigned to you yet.</td></tr>';
-    } else {
-        const sorted = [...myTasks].sort((a, b) => b.id - a.id);
+    if (allAssignTasks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #888;">No tasks found.</td></tr>';
+        return;
+    }
 
-        const totalPages = Math.ceil(sorted.length / itemsPerPage);
-        const startIndex = (currentPage.tasks - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedData = sorted.slice(startIndex, endIndex);
+    const sorted = [...allAssignTasks].sort((a, b) => b.id - a.id);
+    const startIndex = (currentPage.tasks - 1) * itemsPerPage;
+    const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage);
 
-        tbody.innerHTML = paginatedData.map(t => {
-            const progress = t.progress || 0;
-            const progressColor = progress >= 75 ? '#27ae60' :
-                progress >= 50 ? '#f39c12' : '#e74c3c';
+    tbody.innerHTML = paginatedData.map((t, index) => {
+        const progress = t.progress || 0;
+        const progressColor = progress >= 75 ? '#27ae60' : progress >= 50 ? '#f39c12' : '#e74c3c';
 
-            return `
-                <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
-                    <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
-                    <td>${t.assigneeName}</td>
-                    <td>${t.dept}</td>
-                    <td class="task-cell">${t.task.substring(0, 30)}${t.task.length > 30 ? '...' : ''}</td>
-                    <td>
-                        <span class="status-badge ${t.status.toLowerCase()}">${t.status}</span>
-                        <div style="margin-top:2px; display: flex; align-items: center; gap: 6px;">
-                            <div style="flex: 1; background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                <div style="width: ${progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease;"></div>
-                            </div>
-                            <span style="font-size: 0.75rem; color: #666; min-width: 35px;">${progress}%</span>
-                        </div>
-                    </td>
-                    <td><i class="fas fa-eye"></i></td>
-                </tr>
-            `;
-        }).join('');
+        return `
+            <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
+                <td class="id-cell">${startIndex + index + 1}</td>
+                <td>${new Date(t.assignedDate).toLocaleDateString()}</td>
+                <td>${t.assigneeName}</td>
+                <td>${t.dept}</td>
+                <td class="task-cell">${t.task.substring(0, 25)}${t.task.length > 25 ? '...' : ''}</td>
+                <td style="padding: 5px 10px;">
+                    <span class="status-badge ${t.status.toLowerCase()}" style="padding: 2px 8px; font-size: 0.7rem;">${t.status}</span>
+                    <div style="margin-top: 4px; display: flex; align-items: center; gap: 5px;">
+                        <div style="flex: 1; background: #e0e0e0; height: 4px; border-radius: 2px; overflow: hidden;">
+                            <div style="width: ${progress}%; background: ${progressColor}; height: 100%;"></div>
+                        </div>
+                        <span style="font-size: 0.65rem; color: #666;">${progress}%</span>
+                    </div>
+                </td>
+                <td class="action-cell">
+                    <button class="view-btn" style="padding: 4px 8px; font-size: 0.8rem;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 
-        addPaginationControls('task-row', sorted.length, currentPage.tasks, 'tasks');
-    }
-
-    updateCounter('totalTasks', myTasks.length);
+    updateCounter('totalTasks', allAssignTasks.length);
 }
 
 function addPaginationControls(tableId, totalItems, currentPageNum, type) {
