@@ -36,7 +36,7 @@ function showToast(msg, type = 'success') {
     };
     toast.innerHTML = `
         <i class="fas fa-${iconMap[type]}"></i>
-        <span>${msg}</span>
+        ${msg}
     `;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
@@ -46,13 +46,28 @@ function showToast(msg, type = 'success') {
 function toggleAuth() {
     const login = document.getElementById('login-box');
     const signup = document.getElementById('signup-box');
-
     if (login.style.display === 'none') {
         login.style.display = 'block';
         signup.style.display = 'none';
     } else {
         login.style.display = 'none';
         signup.style.display = 'block';
+    }
+}
+
+// Toggle password visibility
+function togglePassword(inputId, iconElement) {
+    const passwordInput = document.getElementById(inputId);
+    const icon = iconElement.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
     }
 }
 
@@ -71,7 +86,7 @@ function getRegisteredUsers() {
     }
 }
 
-// Function to save users 
+// Function to save users
 function saveRegisteredUsers(users) {
     try {
         if (!Array.isArray(users)) {
@@ -118,18 +133,17 @@ function setLoading(form, isLoading) {
     }
 }
 
-// Handle login function
+// Handle login
 async function handleLogin(e) {
     e.preventDefault();
     const form = e.target;
-    
     const email = form.querySelector('input[type="email"]').value;
-    const password = form.querySelector('input[type="password"]').value;
+    const password = form.querySelector('input[id="login-password"]').value;
 
     setLoading(form, true);
 
     try {
-        const response = await fetch('/api/login', {
+        const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -140,7 +154,6 @@ async function handleLogin(e) {
         if (response.ok) {
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('currentUser', JSON.stringify(result.user));
-
             showToast(`Welcome back, ${result.user.name}!`, 'success');
 
             setTimeout(() => {
@@ -164,12 +177,11 @@ async function handleLogin(e) {
 async function handleSignup(e) {
     e.preventDefault();
     const form = e.target;
-
     setLoading(form, true);
 
     const name = form.querySelector('input[type="text"]').value;
     const email = form.querySelector('input[type="email"]').value;
-    const password = form.querySelector('input[type="password"]').value;
+    const password = form.querySelector('input[id="signup-password"]').value;
 
     if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         showToast('Please use a different email.', 'error');
@@ -184,11 +196,9 @@ async function handleSignup(e) {
     }
 
     try {
-        const response = await fetch('/api/register', {
+        const response = await fetch('/api/auth', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
 
@@ -196,7 +206,6 @@ async function handleSignup(e) {
 
         if (response.ok) {
             showToast(`Welcome ${name}! Please log in.`, 'success');
-
             setTimeout(() => {
                 toggleAuth();
                 setLoading(form, false);
@@ -205,14 +214,14 @@ async function handleSignup(e) {
             showToast(result.error || 'Registration failed', 'error');
             setLoading(form, false);
         }
-
     } catch (error) {
         console.error("Connection error:", error);
         showToast('Could not connect to the server.', 'error');
         setLoading(form, false);
     }
 }
-// Verify user access 
+
+// Verify user access
 function verifyAccess(requiredRole) {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userStr = localStorage.getItem('currentUser');
@@ -232,6 +241,7 @@ function verifyAccess(requiredRole) {
             window.location.href = 'index.html';
             return false;
         }
+
         //check users role
         if (user.role !== requiredRole) {
             showToast('Access denied.', 'error');
@@ -258,7 +268,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (isLoggedIn === 'true' && userStr && roleToken) {
         try {
             const user = JSON.parse(userStr);
-
             if (verifyRoleToken(user.email, user.role, roleToken)) {
                 if (user.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
@@ -283,4 +292,3 @@ function logout() {
         window.location.href = 'index.html';
     }, 1000);
 }
-

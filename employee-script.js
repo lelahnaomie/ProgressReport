@@ -368,7 +368,7 @@ function updateReportsTable() {
  <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
 <td class="status-cell"><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
    <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; border: none; font-size: 0.75rem; pointer-events: none;">
+                    <button class="view-btn" style="padding: 4px 10px; border: none; background:#fff; font-size: 0.75rem; pointer-events: none;">
                         <i class="fas fa-eye"></i> 
                     </button>
                 </td>
@@ -417,7 +417,7 @@ function updateTaskTable() {
                     </div>
                 </td>
                 <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; border: none; font-size: 0.75rem; pointer-events: none;">
+                    <button class="view-btn" style="padding: 4px 10px; background:#fff; border: none; font-size: 0.75rem; pointer-events: none;">
                         <i class="fas fa-eye"></i> 
                     </button>
                 </td>

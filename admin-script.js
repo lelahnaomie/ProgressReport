@@ -361,9 +361,9 @@ function updateTasksView() {
                         <span style="font-size: 0.6rem; color: #666;">${progress}%</span>
                     </div>
                 </td>
-                <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem; pointer-events: none;">
-                        <i class="fas fa-eye"></i> View
+               <td class="action-cell">
+                    <button class="view-btn" style="padding: 4px 10px; border: none; background: #fff; font-size: 0.75rem; pointer-events: none;">
+                        <i class="fas fa-eye"></i> 
                     </button>
                 </td>
             </tr>

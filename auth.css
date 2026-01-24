@@ -147,6 +147,30 @@ body {
     box-shadow: 0 0 0 3px rgba(20, 150, 72, 0.1);
 }
 
+/* Password toggle styles */
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 45px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+}
+
+.password-toggle:hover {
+    color: var(--primary-green);
+}
+
 .btn {
     width: 100%;
     padding: 15px;
