@@ -145,9 +145,9 @@ async function handleLogin(e) {
     try {
         const response = await fetch('/api/auth', {
             method: 'POST',
-            action: 'login',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            // ACTION MUST BE INSIDE THE BODY
+            body: JSON.stringify({ action: 'login', email, password })
         });
 
         const result = await response.json();
@@ -155,21 +155,23 @@ async function handleLogin(e) {
         if (response.ok) {
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('currentUser', JSON.stringify(result.user));
+            
+            // Generate a token for your local role verification logic
+            const token = generateRoleToken(result.user.email, result.user.role);
+            localStorage.setItem('roleToken', token);
+
             showToast(`Welcome back, ${result.user.name}!`, 'success');
 
             setTimeout(() => {
-                if (result.user.role === 'admin') {
-                    window.location.href = 'admin-dashboard.html';
-                } else {
-                    window.location.href = 'employee-dashboard.html';
-                }
+                window.location.href = result.user.role === 'admin' 
+                    ? 'admin-dashboard.html' 
+                    : 'employee-dashboard.html';
             }, 1000);
         } else {
             showToast(result.error || 'Login failed', 'error');
             setLoading(form, false);
         }
     } catch (error) {
-        console.error("Login error:", error);
         showToast('Server connection failed.', 'error');
         setLoading(form, false);
     }
@@ -178,30 +180,18 @@ async function handleLogin(e) {
 async function handleSignup(e) {
     e.preventDefault();
     const form = e.target;
-    setLoading(form, true);
-
     const name = form.querySelector('input[type="text"]').value;
     const email = form.querySelector('input[type="email"]').value;
     const password = form.querySelector('input[id="signup-password"]').value;
 
-    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        showToast('Please use a different email.', 'error');
-        setLoading(form, false);
-        return;
-    }
-
-    if (password.length < 6) {
-        showToast('Password too short (minimum 6 characters).', 'error');
-        setLoading(form, false);
-        return;
-    }
+    setLoading(form, true);
 
     try {
         const response = await fetch('/api/auth', {
             method: 'POST',
-            action: 'register',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
+            // ACTION MUST BE INSIDE THE BODY
+            body: JSON.stringify({ action: 'register', name, email, password })
         });
 
         const result = await response.json();
@@ -217,7 +207,6 @@ async function handleSignup(e) {
             setLoading(form, false);
         }
     } catch (error) {
-        console.error("Connection error:", error);
         showToast('Could not connect to the server.', 'error');
         setLoading(form, false);
     }
