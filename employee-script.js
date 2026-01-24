@@ -193,23 +193,25 @@ async function loadDataFromDatabase() {
         setLoading(false);
     }
 }
-
 function loadProfileData() {
     const userStr = localStorage.getItem('currentUser');
     
     if (!userStr) {
-        window.location.href = 'index.html'; // Redirect if not logged in
+        window.location.href = 'index.html';
         return;
     }
 
     const user = JSON.parse(userStr);
 
-    // Update your HTML elements with the user data
+    // Display at top of profile card
     document.getElementById('profile-name').textContent = user.name;
-    document.getElementById('profile-email').textContent = user.email;
-    document.getElementById('profile-role').textContent = user.role;
+    document.getElementById('profile-role').textContent = user.role || 'Employee';
+    
+    // Fill the editable input fields
+    document.getElementById('profileName').value = user.name || '';
+    document.getElementById('profileEmail').value = user.email || '';
+    document.getElementById('profileDept').value = user.dept || currentUser.dept || 'Not Assigned';
 }
-
 // Run when page loads
 document.addEventListener('DOMContentLoaded', loadProfile);
 async function markTaskComplete(taskId) {
@@ -641,11 +643,19 @@ async function saveProfile() {
     const saveBtn = document.querySelector('#profile-view .btn');
     setLoading(true, saveBtn, "Saving...");
 
+    const newName = document.getElementById('profileName').value.trim();
+    const newEmail = document.getElementById('profileEmail').value.trim();
+
+    if (!newName || !newEmail) {
+        showToast('Name and email are required', 'error');
+        setLoading(false, saveBtn);
+        return;
+    }
+
     const profileData = {
         id: currentUser.id,
-        name: document.getElementById('profileName').value,
-        email: document.getElementById('profileEmail').value,
-        // department: document.getElementById('profileDept').value
+        name: newName,
+        email: newEmail
     };
 
     try {
@@ -658,28 +668,28 @@ async function saveProfile() {
         const result = await response.json();
 
         if (response.ok) {
-            currentUser.name = profileData.name;
-            currentUser.email = profileData.email;
-            
-            // if (profileData.department) {
-            //     currentUser.dept = profileData.department; 
-            // }
+            // Update local user object
+            currentUser.name = newName;
+            currentUser.email = newEmail;
 
+            // Save to localStorage
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
+            // Update header and refresh profile display
             updateUserHeader();
-            loadProfileData(); 
-            showToast('Profile saved successfully!', 'success');
+            loadProfileData();
+            
+            showToast('Profile updated successfully!', 'success');
         } else {
             showToast(result.error || 'Failed to update profile', 'error');
         }
     } catch (error) {
+        console.error('Profile update error:', error);
         showToast('Server connection error', 'error');
     } finally {
         setLoading(false, saveBtn);
     }
 }
-
 function saveSettings() {
     const saveBtn = document.querySelector('#settings-view .btn');
     setLoading(true, saveBtn, "Saving...");

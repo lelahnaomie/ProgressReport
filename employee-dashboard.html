@@ -21,7 +21,7 @@
                             <i class="fas fa-user-circle"></i>
                         </button>
                         <div class="dropdown-menu" id="profileDropdown">
-                            <a onclick="showSection('profile-view', document.querySelector('.nav-item:nth-child(5)')); toggleDropdown();">
+                            <a onclick="showSection('profile-view', document.querySelector('.nav-item:nth-child(4)')); toggleDropdown();">
                                 <i class="fas fa-user"></i>
                                 <span>Profile</span>
                             </a>
@@ -190,7 +190,7 @@
                                 <i class="fas fa-file-alt"></i>
                             </div>
                             <div class="stat-details">
-                                <h3 id="totalTasks">2</h3>
+                                <h3 id="totalTasks">0</h3>
                                 <p>Total tasks</p>
                             </div>
                         </div>
@@ -214,33 +214,37 @@
                     </div>
                 </section>
                 <!-- profile section -->
-                <section id="profile-view" style="display:none;">
-                    <div class="content-header">
-                        <h1>my profile</h1>
-                    </div>
-                    <div class="standard-form">
-                        <h2>personal information</h2>
-                        <div class="form-group">
-                            <label>full name</label>
-                            <input type="text" id="profileName" placeholder="your full name">
-                        </div>
-                        <div class="form-group">
-                            <label>email address</label>
-                            <input type="email" id="profileEmail" placeholder="your email">
-                        </div>
-                        <!-- <div class="form-group">
-                            <label>department</label>
-                            <select id="profileDept">
-                                <option value="">select department</option>
-                                <option value="Development">development</option>
-                                <option value="Marketing">marketing</option>
-                                <option value="Design">design</option>
-                                <option value="Operations Management">operations management</option>
-                            </select>
-                        </div> -->
-                        <button class="btn" onclick="saveProfile()">save changes</button>
-                    </div>
-                </section>
+               <section id="profile-view" style="display: none;">
+    <h2>My Profile</h2>
+    <div class="profile-card">
+        <div class="profile-header">
+            <i class="fas fa-user-circle" style="font-size: 4rem; color: #149648;"></i>
+            <h3 id="profile-name">Loading...</h3>
+            <p id="profile-role" style="color: #666;">Employee</p>
+        </div>
+        
+        <div class="profile-info">
+            <div class="form-group">
+                <label for="profileName">Full Name</label>
+                <input type="text" id="profileName" class="form-control" placeholder="Your name">
+            </div>
+            
+            <div class="form-group">
+                <label for="profileEmail">Email</label>
+                <input type="email" id="profileEmail" class="form-control" placeholder="your.email@company.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" id="profileDept" class="form-control" readonly>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="saveProfile()">
+            <i class="fas fa-save"></i> Save Changes
+        </button>
+    </div>
+</section>
                 <!-- settings section -->
                 <section id="settings-view" style="display:none;">
                     <div class="content-header">

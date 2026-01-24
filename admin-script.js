@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData();
     setupTaskForm();
     initCharts();
+    loadSettings();
 });
 
 // check if user is admin
@@ -56,6 +57,22 @@ function checkAdmin() {
     const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
     if (user.role !== 'admin') {
         window.location.href = 'index.html';
+    }
+}
+
+function loadSettings() {
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        
+        // Fill the input fields so you can see them/change them
+        const nameField = document.getElementById('adminName');
+        const emailField = document.getElementById('adminEmail');
+        const notifField = document.getElementById('notifPref');
+
+        if (nameField) nameField.value = settings.name || '';
+        if (emailField) emailField.value = settings.email || '';
+        if (notifField) notifField.value = settings.notif || 'email';
     }
 }
 
@@ -167,7 +184,7 @@ async function loadData() {
             }));
         }
 
-        // 2. Fetch Tasks from Turso
+        // 2. Fetch Tasks
         const taskRes = await fetch('/api/get-tasks');
         if (taskRes.ok) {
             const tRows = await taskRes.json();
@@ -313,7 +330,7 @@ function setupTaskForm() {
             });
 
             if (response.ok) {
-                showToast('Task saved to Turso database!', 'success');
+                showToast('Task assigned!', 'success');
                 assignform.reset();
                 // IMPORTANT: Fetch the fresh list from the database immediately
                 await loadAdminTasksFromDatabase(); 
@@ -378,10 +395,6 @@ function openTaskModal(taskId) {
     const task = allAssignTasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Initialize tracking if not exists
-    if (!task.progress) task.progress = 0;
-    if (!task.updates) task.updates = [];
-
     const modal = document.getElementById('reportModal');
     const modalContent = modal.querySelector('.modal-content');
 
@@ -414,52 +427,28 @@ function openTaskModal(taskId) {
         <h3>Task Details</h3>
         <div class="task-box">${task.task}</div>
         
-        <h3>Progress Tracking</h3>
+        <h3>Current Progress</h3>
         <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                <span style="font-weight: 600;">Current Progress:</span>
+                <span style="font-weight: 600;">Progress:</span>
                 <span style="font-weight: 600; color: ${progressColor}; font-size: 1.2rem;">${task.progress}%</span>
             </div>
             
-            <div style="background: #e0e0e0; height: 30px; border-radius: 15px; overflow: hidden; margin-bottom: 20px;">
+            <div style="background: #e0e0e0; height: 30px; border-radius: 15px; overflow: hidden;">
                 <div style="width: ${task.progress}%; background: ${progressColor}; height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
                     ${task.progress > 15 ? task.progress + '%' : ''}
                 </div>
             </div>
             
-            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Update Progress:</label>
-            <input type="range" id="progressSlider" min="0" max="100" value="${task.progress}" 
-                style="width: 100%; height: 8px; margin-bottom: 10px; cursor: pointer;"
-                oninput="document.getElementById('progressValue').textContent = this.value + '%'">
-            
-            <div style="text-align: center; margin-bottom: 15px;">
-                <span id="progressValue" style="font-size: 1.1rem; font-weight: 600; color: ${progressColor};">${task.progress}%</span>
-            </div>
-            
-            <button class="btn" onclick="updateTaskProgress(${task.id})" style="width: 100%;">
-                <i class="fas fa-save"></i> Update Progress
-            </button>
+            ${task.update_note ? `
+                <div style="margin-top: 15px; padding: 12px; background: white; border-left: 4px solid #149648; border-radius: 4px;">
+                    <strong style="color: #149648; display: block; margin-bottom: 5px;">Latest Update:</strong>
+                    <p style="margin: 0; color: #555;">${task.update_note}</p>
+                </div>
+            ` : '<p style="margin-top: 15px; color: #999; text-align: center;">No update notes yet</p>'}
         </div>
 
-        ${task.updates && task.updates.length > 0 ? `
-            <h3>Progress History</h3>
-            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white;">
-                ${task.updates.map(update => `
-                    <div style="padding: 12px; border-left: 4px solid #149648; background: #f8f9fa; margin-bottom: 12px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <strong style="color: #149648; font-size: 1.1rem;">${update.progress}%</strong>
-                            <span style="color: #666; font-size: 0.85rem;">${new Date(update.date).toLocaleString()}</span>
-                        </div>
-                        ${update.note ? `<p style="margin: 5px 0 0 0; color: #555;">${update.note}</p>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-        ` : '<p style="color: #999; text-align: center; padding: 20px;">No progress updates yet</p>'}
-
         <div class="action-buttons" style="margin-top: 25px; display: flex; gap: 10px;">
-            <button class="btn-approve" onclick="markTaskComplete(${task.id})" style="flex: 1;">
-                <i class="fas fa-check"></i> Mark Complete
-            </button>
             <button class="btn-reject" onclick="deleteTask(${task.id})" style="flex: 1;">
                 <i class="fas fa-trash"></i> Delete Task
             </button>
@@ -505,26 +494,26 @@ function updateTaskProgress(taskId) {
 }
 
 // Mark task as complete
-function markTaskComplete(taskId) {
-    if (!confirm('Mark this task as 100% complete?')) return;
+// function markTaskComplete(taskId) {
+//     if (!confirm('Mark this task as 100% complete?')) return;
 
-    const task = allAssignTasks.find(t => t.id === taskId);
-    if (!task) return;
+//     const task = allAssignTasks.find(t => t.id === taskId);
+//     if (!task) return;
 
-    task.status = 'Completed';
-    task.progress = 100;
-    task.updates = task.updates || [];
-    task.updates.unshift({
-        progress: 100,
-        date: new Date().toISOString(),
-        note: 'Task marked as complete by admin'
-    });
+//     task.status = 'Completed';
+//     task.progress = 100;
+//     task.updates = task.updates || [];
+//     task.updates.unshift({
+//         progress: 100,
+//         date: new Date().toISOString(),
+//         note: 'Task marked as complete by admin'
+//     });
 
-    saveData();
-    updateTasksView();
-    closeModal();
-    showToast('Task marked as complete!', 'success');
-}
+//     saveData();
+//     updateTasksView();
+//     closeModal();
+//     showToast('Task marked as complete!', 'success');
+// }
 
 // Delete task
 async function deleteTask(taskId) {

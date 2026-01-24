@@ -1,43 +1,39 @@
-import { createClient } from '@libsql/client';
-
-const client = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+// api/update-profile.js
+import { createClient } from "@libsql/client";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-  const { id, name, email} = req.body;
+  const { id, name, email } = req.body;
+
+  if (!id || !name || !email) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const client = createClient({
+    url: process.env.TURSO_DATABASE_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
 
   try {
-
-    const userResult = await client.execute({
-      sql: "SELECT department FROM users WHERE id = ?",
-      args: [id]
-    });
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-
     await client.execute({
-      sql: `UPDATE users 
-            SET name = ?, email = ?
-            WHERE id = ?`,
+      sql: "UPDATE users SET name = ?, email = ? WHERE id = ?",
       args: [name, email, id]
     });
 
-    
     return res.status(200).json({ 
-      success: true, 
       message: "Profile updated successfully",
-      locked: !!currentDeptInDb 
+      user: { id, name, email }
     });
-
   } catch (error) {
-    console.error("Profile Update Error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("Profile update error:", error);
+    
+    if (error.message.includes("UNIQUE constraint failed")) {
+      return res.status(400).json({ error: "Email already in use" });
+    }
+    
+    return res.status(500).json({ error: "Failed to update profile" });
   }
 }

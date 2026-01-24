@@ -205,7 +205,7 @@ async function handleSignup(e) {
         const result = await response.json();
 
         if (response.ok) {
-            showToast(`Welcome ${name}! Please log in.`, 'success');
+            showToast(`Welcome ${name}!`, 'success');
             setTimeout(() => {
                 window.location.href = 'employee-dashboard.html'
                 setLoading(form, false);
