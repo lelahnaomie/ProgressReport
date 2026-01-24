@@ -244,11 +244,11 @@ function updateReportsTable() {
 <td class="period-cell">${r.start} to ${r.end}</td>
  <td class="task-cell">${r.task.substring(0, 30)}${r.task.length > 30 ? '...' : ''}</td>
 <td class="status-cell"><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
- <td class="action-cell">
-                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem;">
+   <td class="action-cell">
+                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem; pointer-events: none;">
                         <i class="fas fa-eye"></i> View
                     </button>
-                </td> </tr>
+                </td>
 `).join('');
 
         addPaginationControls('my-reports-rows', sorted.length, currentPage.reports, 'reports');
@@ -280,10 +280,10 @@ function updateTaskTable() {
         return `
             <tr onclick="openTaskModal(${t.id})" style="cursor: pointer;">
                 <td class="id-cell">${startIndex + index + 1}</td>
-                <td class="date-cell">${new Date(t.assignedDate).toLocaleDateString()}</td>
+                <td style="font-size: 0.85rem;">${new Date(t.assignedDate).toLocaleDateString()}</td>
                 <td>${t.assigneeName}</td>
                 <td>${t.dept}</td>
-                <td class="task-cell">${t.task.substring(0, 25)}${t.task.length > 25 ? '...' : ''}</td>
+                <td class="task-cell" style="font-size: 0.85rem;">${t.task.substring(0, 30)}${t.task.length > 30 ? '...' : ''}</td>
                 <td style="padding: 4px 10px;">
                     <span class="status-badge ${t.status.toLowerCase()}" style="padding: 1px 6px; font-size: 0.65rem;">${t.status}</span>
                     <div style="margin-top: 3px; display: flex; align-items: center; gap: 5px;">
@@ -294,7 +294,7 @@ function updateTaskTable() {
                     </div>
                 </td>
                 <td class="action-cell">
-                    <button class="view-btn"  style="padding: 4px 10px; font-size: 0.75rem; border-style: none;">
+                    <button class="view-btn" style="padding: 4px 10px; font-size: 0.75rem; pointer-events: none;">
                         <i class="fas fa-eye"></i> View
                     </button>
                 </td>
