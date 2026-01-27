@@ -60,7 +60,7 @@ function checkEmployee() {
             loadingOverlay.style.display = 'none';
         }
         if(dashboardContent){
-            dashboardContent.style.display = 'block'
+            dashboardContent.style.display = 'flex'
         }
     }
 }
