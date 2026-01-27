@@ -59,7 +59,10 @@ function checkAdmin() {
         window.location.href = 'index.html';
     }
     else{
-        document.body.style.display = 'block';
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if(loadingOverlay){
+            loadingOverlay.style.display = 'none';
+        }
     }
 }
 async function loadSettings() {

@@ -55,8 +55,12 @@ function checkEmployee() {
     }
     else{
         const loadingOverlay = document.getElementById('loading-overlay');
+        const dashboardContent = document.querySelector('.dashboard-wrapper');
         if(loadingOverlay){
             loadingOverlay.style.display = 'none';
+        }
+        if(dashboardContent){
+            dashboardContent.style.display = 'block'
         }
     }
 }
