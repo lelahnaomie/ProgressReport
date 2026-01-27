@@ -303,18 +303,12 @@ function setupEventListeners() {
         e.preventDefault();
         const submitBtn = form.querySelector('button[type="submit"]');
 
-        // check if user has a department assigned
-        if (!currentUser.department) {
-            showToast('you have not been assigned a department yet. please contact admin.', 'error');
-            return;
-        }
-
         setLoading(true, submitBtn, "submitting...");
 
         const reportData = {
             user_id: currentUser.id,
             employee_name: currentUser.name, 
-            department: currentUser.department,
+            department: currentUser.department || 'Not Assigned', // allow submission without department
             start_date: document.getElementById('startDate').value,
             end_date: document.getElementById('endDate').value,
             task_summary: document.getElementById('taskContent').value

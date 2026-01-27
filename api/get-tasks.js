@@ -1,3 +1,4 @@
+// api/get-tasks.js
 import { createClient } from '@libsql/client';
 
 const client = createClient({
@@ -6,21 +7,30 @@ const client = createClient({
 });
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'method not allowed' });
+  }
+
   const { assignee_name } = req.query;
+
   try {
-    let result;
+    let sql = "SELECT * FROM tasks ORDER BY assigned_date DESC";
+    let args = [];
+
+    // if assignee_name is provided, filter by it
     if (assignee_name) {
-      // For Employee View
-      result = await client.execute({
-        sql: "SELECT * FROM tasks WHERE assignee_name = ? ORDER BY id DESC",
-        args: [assignee_name]
-      });
-    } else {
-      // For Admin View
-      result = await client.execute("SELECT * FROM tasks ORDER BY id DESC");
+      sql = "SELECT * FROM tasks WHERE assignee_name = ? ORDER BY assigned_date DESC";
+      args = [assignee_name];
     }
+
+    const result = await client.execute({
+      sql: sql,
+      args: args
+    });
+
     return res.status(200).json(result.rows);
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+  } catch (error) {
+    console.error('get tasks error:', error);
+    return res.status(500).json({ error: 'failed to fetch tasks' });
   }
 }
