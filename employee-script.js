@@ -53,6 +53,9 @@ function checkEmployee() {
     if (!currentUser || currentUser.role !== 'employee') {
         window.location.href = 'index.html';
     }
+    else{
+        contentDiv.style.display = 'block';
+    }
 }
 
 function updateUserHeader() {

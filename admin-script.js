@@ -58,6 +58,9 @@ function checkAdmin() {
     if (user.role !== 'admin') {
         window.location.href = 'index.html';
     }
+    else{
+        contentDiv.style.display = 'block';
+    }
 }
 async function loadSettings() {
     if (!currentUser || !currentUser.id) {
