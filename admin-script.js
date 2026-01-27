@@ -59,7 +59,7 @@ function checkAdmin() {
         window.location.href = 'index.html';
     }
     else{
-        contentDiv.style.display = 'block';
+        document.body.style.display = 'block';
     }
 }
 async function loadSettings() {

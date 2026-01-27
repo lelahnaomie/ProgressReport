@@ -54,7 +54,10 @@ function checkEmployee() {
         window.location.href = 'index.html';
     }
     else{
-        contentDiv.style.display = 'block';
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if(loadingOverlay){
+            loadingOverlay.style.display = 'none';
+        }
     }
 }
 
