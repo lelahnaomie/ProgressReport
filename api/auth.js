@@ -1,4 +1,3 @@
-// api/auth.js
 import { createClient } from "@libsql/client";
 import bcrypt from "bcryptjs";
 
@@ -31,13 +30,35 @@ export default async function handler(req, res) {
 
       if (result.rows.length > 0) {
         const user = result.rows[0];
-        const isMatch = await bcrypt.compare(password, user.password);
+        let isMatch = false;
+
+        try {
+          isMatch = await bcrypt.compare(password, user.password);
+        } catch (e) {
+          isMatch = false;
+        }
+
+  
+        if (!isMatch && password === user.password) {
+          isMatch = true;
+
+          const salt = await bcrypt.genSalt(10);
+          const newHashedPassword = await bcrypt.hash(password, salt);
+          
+          await client.execute({
+            sql: "UPDATE users SET password = ? WHERE id = ?",
+            args: [newHashedPassword, user.id]
+          });
+          console.log(`User ${user.id} password migrated to secure hash.`);
+        }
 
         if (isMatch) {
-          delete user.password;
+          const userResponse = { ...user };
+          delete userResponse.password;
+          
           return res.status(200).json({
             message: "Login successful",
-            user: user
+            user: userResponse
           });
         }
       }
@@ -60,15 +81,13 @@ export default async function handler(req, res) {
       return res.status(201).json({ message: "User registered successfully!" });
     } 
     else {
-      return res.status(400).json({ error: "Invalid action. Use 'login' or 'register'" });
+      return res.status(400).json({ error: "Invalid action." });
     }
   } catch (e) {
     console.error("Error:", e);
-    
     if (e.message.includes("UNIQUE constraint failed")) {
       return res.status(400).json({ error: "Email already exists" });
     }
-    
     return res.status(500).json({ error: "Internal server error" });
   }
 }
