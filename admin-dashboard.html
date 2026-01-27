@@ -47,7 +47,7 @@
                         Customer
                         <span>Pull</span>
                     </h2>
-                    <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">admin panel</p>
+                    <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">Admin Panel</p>
                 </div>
                 <nav>
                     <div class="nav-item active" onclick="showSection('analytics-view', this)">
@@ -113,7 +113,7 @@
                             </div>
                             <div class="stat-details">
                                 <h3 id="pendingReports">0</h3>
-                                <p>Pending review</p>
+                                <p>Pending Review</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -131,7 +131,7 @@
                             </div>
                             <div class="stat-details">
                                 <h3 id="activeEmployees">0</h3>
-                                <p>Active employees</p>
+                                <p>Active Employees</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -145,10 +145,10 @@
                         </div>
                     </div>
                     <div class="filter-bar">
-                        <button id="filter-daily" onclick="filterByTime('daily')">daily</button>
-                        <button id="filter-weekly" onclick="filterByTime('weekly')">weekly</button>
-                        <button id="filter-monthly" onclick="filterByTime('monthly')">monthly</button>
-                        <button id="filter-all" class="active" onclick="filterByTime('all')">all time</button>
+                        <button id="filter-daily" onclick="filterByTime('daily')">Daily</button>
+                        <button id="filter-weekly" onclick="filterByTime('weekly')">Weekly</button>
+                        <button id="filter-monthly" onclick="filterByTime('monthly')">Monthly</button>
+                        <button id="filter-all" class="active" onclick="filterByTime('all')">All Time</button>
                     </div>
                     <div class="search-bar">
                         <input
@@ -204,28 +204,28 @@
                             >
                             <select id="assignDept" required>
                                 <option value="">select department</option>
-                                <option value="Development">development</option>
-                                <option value="Marketing">marketing</option>
-                                <option value="Operations Management">operations management</option>
-                                <option value="Design">design</option>
+                                <option value="Development">Development</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Operations Management">Operations Management</option>
+                                <option value="Design">Design</option>
                             </select>
                             <div class="date-row">
                                 <div class="group">
-                                    <label>assigned date</label>
+                                    <label>Assigned date</label>
                                     <input type="date" id="assignedDate" required>
                                 </div>
                                 <div class="group">
-                                    <label>due date</label>
+                                    <label>Due date</label>
                                     <input type="date" id="dueDate" required>
                                 </div>
                             </div>
                             <textarea
                                 id="assignTask"
-                                placeholder="describe the task to be assigned..."
+                                placeholder="Describe the task to be assigned..."
                                 rows-6
                                 required
                             ></textarea>
-                            <button type="submit" class="btn">assign task</button>
+                            <button type="submit" class="btn">Assign Task</button>
                         </form>
                     </div>
                 </section>
@@ -254,8 +254,8 @@
                                     <th>Assignee</th>
                                     <th>department</th>
                                     <th>Task</th>
-                                    <th>status</th>
-                                    <th>action</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="task-row"></tbody>
@@ -274,7 +274,7 @@
                             </div>
                             <div class="stat-details">
                                 <h3 id="topPerformer">-</h3>
-                                <p>top performer</p>
+                                <p>Top performer</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -292,25 +292,25 @@
                             </div>
                             <div class="stat-details">
                                 <h3 id="topDept">-</h3>
-                                <p>most active dept</p>
+                                <p>Most active dept</p>
                             </div>
                         </div>
                     </div>
                     <div class="chart-card">
-                        <h3>team activity timeline</h3>
+                        <h3>Team activity timeline</h3>
                         <canvas id="timelineChart"></canvas>
                     </div>
                     <div class="table-card">
-                        <h3>employee leaderboard</h3>
+                        <h3>Employee leaderboard</h3>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>rank</th>
-                                    <th>employee</th>
-                                    <th>department</th>
-                                    <th>total</th>
-                                    <th>approved</th>
-                                    <th>performance</th>
+                                    <th>Rank</th>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Total</th>
+                                    <th>Approved</th>
+                                    <th>Performance</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-rows"></tbody>
@@ -320,27 +320,27 @@
                 <!-- settings section -->
                 <section id="settings-view" style="display:none;">
                     <div class="content-header">
-                        <h1>admin settings</h1>
+                        <h1>Admin settings</h1>
                     </div>
                     <div class="standard-form">
-                        <h2>account configuration</h2>
+                        <h2>Account configuration</h2>
                         <div class="form-group">
-                            <label>display name</label>
+                            <label>Name</label>
                             <input type="text" id="adminName" value="admin">
                         </div>
                         <div class="form-group">
-                            <label>email address</label>
+                            <label>Email address</label>
                             <input type="email" id="adminEmail" value="admin@customerpull.com">
                         </div>
                         <div class="form-group">
-                            <label>notification preferences</label>
+                            <label>Notification preferences</label>
                             <select id="notifPref">
-                                <option>all reports</option>
-                                <option>pending only</option>
-                                <option>none</option>
+                                <option>All reports</option>
+                                <option>Pending only</option>
+                                <option>None</option>
                             </select>
                         </div>
-                        <button class="btn" onclick="saveSettings()">save changes</button>
+                        <button class="btn" onclick="saveSettings()">Save changes</button>
                         <button class="btn" onclick="clearAllData()" style="background: var(--danger); margin-top: 1rem;">clear all data</button>
                     </div>
                 </section>
@@ -353,15 +353,15 @@
                 <h2 id="modal-name"></h2>
                 <div class="modal-info">
                     <div class="modal-info-item">
-                        <strong>department:</strong>
+                        <strong>Department:</strong>
                         <span id="modal-dept"></span>
                     </div>
                     <div class="modal-info-item">
-                        <strong>timeline:</strong>
+                        <strong>Timeline:</strong>
                         <span id="modal-dates"></span>
                     </div>
                     <div class="modal-info-item">
-                        <strong>status:</strong>
+                        <strong>Status:</strong>
                         <span id="modal-status"></span>
                     </div>
                 </div>

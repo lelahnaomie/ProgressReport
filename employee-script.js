@@ -241,7 +241,6 @@ function loadProfileData() {
     if (nameField) nameField.value = user.name || '';
     if (emailField) emailField.value = user.email || '';
 
-    // department is read-only assigned by admin
     if (deptField) {
         deptField.value = user.department || 'Not Assigned';
         deptField.readOnly = true;
@@ -329,7 +328,6 @@ function showSection(id, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
-    // auto-fill name and department when showing submit report section
     if (id === 'submit-view') {
         const nameField = document.getElementById('staffName');
         const deptField = document.getElementById('staffDept');
@@ -339,7 +337,7 @@ function showSection(id, el) {
         }
         
         if (deptField) {
-            deptField.value = currentUser.department || 'Not Assigned';
+            deptField.value = currentUser.department;
         }
     }
 
@@ -586,7 +584,7 @@ function openTaskModal(taskId) {
             <textarea id="progressNote" placeholder="what have you done so far?" 
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
-            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 50%; border:1px solid #149648; border-radius: 4px; justify-content:center; align-items:center;padding:10px; margin:10px 0; background: #149648;">
+            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; justify-content:center; align-items:center; left: 10px; padding:10px; margin:10px 0; background: #149648;">
                 update progress
             </button>
         </div>

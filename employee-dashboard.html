@@ -60,7 +60,7 @@
                     </div>
                     <div class="nav-item" onclick="showSection('submit-view', this)">
                         <i class="fas fa-edit"></i>
-                        <span>Submit report</span>
+                        <span>Submit Report</span>
                     </div>
                     <div class="nav-item" onclick="showSection('profile-view', this)">
                         <i class="fas fa-user"></i>
@@ -85,7 +85,7 @@
                 <!-- my reports section -->
                 <section id="my-reports-view">
                     <div class="content-header">
-                        <h1>My reports</h1>
+                        <h1>My Reports</h1>
                     </div>
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -131,11 +131,11 @@
                             <thead>
                                 <tr>
                                     <th>Id</th>
-                                    <th>date submitted</th>
-                                    <th>period</th>
-                                    <th>task summary</th>
-                                    <th>status</th>
-                                    <th>action</th>
+                                    <th>Date submitted</th>
+                                    <th>Period</th>
+                                    <th>Task summary</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="my-reports-rows"></tbody>
@@ -145,7 +145,7 @@
                 <!-- submit report section -->
                 <section id="submit-view" style="display:none;">
                     <div class="content-header">
-                        <h1>submit work report</h1>
+                        <h1>Submit work report</h1>
                     </div>
                     <div class="standard-form">
                         <h2>Progress report</h2>
@@ -165,21 +165,21 @@
                             </select> -->
                             <div class="date-row">
                                 <div class="group">
-                                    <label>start date</label>
+                                    <label>Start date</label>
                                     <input type="date" id="startDate" required>
                                 </div>
                                 <div class="group">
-                                    <label>end date</label>
+                                    <label>End date</label>
                                     <input type="date" id="endDate" required>
                                 </div>
                             </div>
                             <textarea
                                 id="taskContent"
-                                placeholder="describe the tasks completed during this period..."
+                                placeholder="Describe the tasks completed during this period..."
                                 rows="6"
                                 required
                             ></textarea>
-                            <button type="submit" class="btn">submit report</button>
+                            <button type="submit" class="btn">Submit report</button>
                         </form>
                     </div>
                 </section>
@@ -210,7 +210,7 @@
                                     <th>department</th>
                                     <th>Task</th>
                                     <th>status</th>
-                                    <th>action</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="task-row"></tbody>
@@ -220,17 +220,17 @@
                 <!-- profile section -->
                 <section id="profile-view" style="display:none;">
                     <div class="content-header">
-                        <h1>my profile</h1>
+                        <h1>My profile</h1>
                     </div>
                     <div class="standard-form">
-                        <h2>personal information</h2>
+                        <h2>Personal information</h2>
                         <div class="form-group">
-                            <label>full name</label>
-                            <input type="text" id="profileName" placeholder="your full name">
+                            <label>Full name</label>
+                            <input type="text" id="profileName" placeholder="full name">
                         </div>
                         <div class="form-group">
-                            <label>email address</label>
-                            <input type="email" id="profileEmail" placeholder="your email">
+                            <label>Email Address</label>
+                            <input type="email" id="profileEmail" placeholder="lnin@gmail.com">
                         </div>
                         <div class="form-group">
                             <label for="staffDept">Department</label>
@@ -241,38 +241,38 @@
                                 readonly
                                 style="background-color: #f5f5f5; cursor: not-allowed;"
                             >
-                            <button class="btn" onclick="saveProfile()">save changes</button>
+                            <button class="btn" onclick="saveProfile()">Save changes</button>
                         </div>
                     </section>
                     <!-- settings section -->
                     <section id="settings-view" style="display:none;">
                         <div class="content-header">
-                            <h1>settings</h1>
+                            <h1>Settings</h1>
                         </div>
                         <div class="standard-form">
-                            <h2>preferences</h2>
+                            <h2>Preferences</h2>
                             <div class="form-group">
-                                <label>email notifications</label>
+                                <label>Email notifications</label>
                                 <select id="emailNotif">
-                                    <option>enabled</option>
-                                    <option>disabled</option>
+                                    <option>Enabled</option>
+                                    <option>Disabled</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>report submission reminders</label>
+                                <label>Report submission reminders</label>
                                 <select id="reminderPref">
-                                    <option>weekly</option>
-                                    <option>monthly</option>
+                                    <option>Weekly</option>
+                                    <option>Monthly</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>language</label>
+                                <label>Language</label>
                                 <select id="langPref">
-                                    <option>english</option>
-                                    <option>french</option>
+                                    <option>English</option>
+                                    <option>French</option>
                                 </select>
                             </div>
-                            <button class="btn" onclick="saveSettings()">save settings</button>
+                            <button class="btn" onclick="saveSettings()">Save settings</button>
                         </div>
                     </section>
                 </main>
@@ -283,15 +283,15 @@
                         <h2 id="modal-name"></h2>
                         <div class="modal-info">
                             <div class="modal-info-item">
-                                <strong>department:</strong>
+                                <strong>Department:</strong>
                                 <span id="modal-dept"></span>
                             </div>
                             <div class="modal-info-item">
-                                <strong>timeline:</strong>
+                                <strong>Timeline:</strong>
                                 <span id="modal-dates"></span>
                             </div>
                             <div class="modal-info-item">
-                                <strong>status:</strong>
+                                <strong>Status:</strong>
                                 <span id="modal-status"></span>
                             </div>
                         </div>
