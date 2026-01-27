@@ -194,20 +194,10 @@ window.addEventListener('click', function (e) {
 async function loadData() {
     setLoading(true);
     try {
-        // 1. Fetch Reports from Turso
-        const reportRes = await fetch('/api/reports?action=getReports&user_id=1');
-        if (reportRes.ok) {
-            const rows = await reportRes.json();
-            allReports = rows.map(row => ({
-                id: row.id,
-                submitDate: new Date(row.submit_date),
-                name: row.employee_name || 'Unknown',
-                dept: row.department,
-                start: row.start_date,
-                end: row.end_date,
-                task: row.task_summary,
-                status: row.status || 'Pending'
-            }));
+        // 1. Fetch Valid Employees first (to get their departments)
+        const empRes = await fetch('/api/get-employees');
+        if (empRes.ok) {
+            validEmployees = await empRes.json();
         }
 
         // 2. Fetch Tasks
@@ -223,14 +213,38 @@ async function loadData() {
                 status: row.status,
                 progress: row.progress || 0,
                 dueDate: row.due_date,
-                update_note: row.update_note // Added this for your modal history
+                update_note: row.update_note
             }));
         }
 
-        // 3. Fetch Valid Employees (from database, not localstorage)
-        const empRes = await fetch('/api/get-employees');
-        if (empRes.ok) {
-            validEmployees = await empRes.json();
+        // 3. Fetch Reports from Turso
+        const reportRes = await fetch('/api/reports?action=getReports&user_id=1');
+        if (reportRes.ok) {
+            const rows = await reportRes.json();
+            allReports = rows.map(row => {
+                // Find the employee's current department from validEmployees or tasks
+                const employee = validEmployees.find(emp => emp.name === row.employee_name);
+                const employeeTask = allAssignTasks.find(task => task.assigneeName === row.employee_name);
+                
+                // Priority: employee profile department > task department > report department
+                let actualDepartment = row.department;
+                if (employee && employee.department && employee.department !== 'Not Assigned') {
+                    actualDepartment = employee.department;
+                } else if (employeeTask && employeeTask.dept && employeeTask.dept !== 'Not Assigned') {
+                    actualDepartment = employeeTask.dept;
+                }
+
+                return {
+                    id: row.id,
+                    submitDate: new Date(row.submit_date),
+                    name: row.employee_name || 'Unknown',
+                    dept: actualDepartment, // Use the corrected department
+                    start: row.start_date,
+                    end: row.end_date,
+                    task: row.task_summary,
+                    status: row.status || 'Pending'
+                };
+            });
         }
 
         // Refresh UI
@@ -845,6 +859,7 @@ function initCharts() {
 // chart update function
 function updateCharts(data) {
     if (charts.dept) {
+        // Use the corrected department from allReports (which now has updated departments)
         const deptCounts = ['Development', 'Marketing', 'Design', 'Operations Management'].map(d =>
             data.filter(r => r.dept === d).length
         );
@@ -882,7 +897,18 @@ function updateCharts(data) {
 function getTeamStats() {
     const stats = {};
     allReports.forEach(r => {
-        if (!stats[r.name]) stats[r.name] = { total: 0, approved: 0, dept: r.dept };
+        // Get employee's current department from validEmployees or tasks
+        const employee = validEmployees.find(emp => emp.name === r.name);
+        const employeeTask = allAssignTasks.find(task => task.assigneeName === r.name);
+        
+        let currentDept = r.dept;
+        if (employee && employee.department && employee.department !== 'Not Assigned') {
+            currentDept = employee.department;
+        } else if (employeeTask && employeeTask.dept && employeeTask.dept !== 'Not Assigned') {
+            currentDept = employeeTask.dept;
+        }
+        
+        if (!stats[r.name]) stats[r.name] = { total: 0, approved: 0, dept: currentDept };
         stats[r.name].total++;
         if (r.status === 'Approved') stats[r.name].approved++;
     });
@@ -906,8 +932,23 @@ function updateTeam() {
     const avgEl = document.getElementById('avgReports');
     if (avgEl) avgEl.textContent = empCount > 0 ? (allReports.length / empCount).toFixed(1) : 0;
 
+    // Calculate department counts using employee's current departments
     const deptCounts = {};
-    allReports.forEach(r => deptCounts[r.dept] = (deptCounts[r.dept] || 0) + 1);
+    allReports.forEach(r => {
+        // Get employee's current department
+        const employee = validEmployees.find(emp => emp.name === r.name);
+        const employeeTask = allAssignTasks.find(task => task.assigneeName === r.name);
+        
+        let currentDept = r.dept;
+        if (employee && employee.department && employee.department !== 'Not Assigned') {
+            currentDept = employee.department;
+        } else if (employeeTask && employeeTask.dept && employeeTask.dept !== 'Not Assigned') {
+            currentDept = employeeTask.dept;
+        }
+        
+        deptCounts[currentDept] = (deptCounts[currentDept] || 0) + 1;
+    });
+    
     let topDept = '-', maxDept = 0;
     Object.keys(deptCounts).forEach(d => {
         if (deptCounts[d] > maxDept) {

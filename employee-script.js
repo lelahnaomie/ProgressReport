@@ -199,7 +199,7 @@ async function loadDataFromDatabase() {
                 id: row.id,
                 submitDate: row.submit_date,
                 name: row.employee_name,
-                dept: row.department,
+                dept: currentUser.department || row.department, // Use current user's department
                 start: row.start_date,
                 end: row.end_date,
                 task: row.task_summary,
