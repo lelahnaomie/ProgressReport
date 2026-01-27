@@ -580,8 +580,8 @@ function openTaskModal(taskId) {
                    style="width: 100%; margin-bottom: 15px;"
                    oninput="document.getElementById('progressValue').textContent = this.value + '%'">
 
-            <label style="display:block; margin-bottom: 5px; font-weight:bold;">progress note:</label>
-            <textarea id="progressNote" placeholder="what have you done so far?" 
+            <label style="display:block; margin-bottom: 5px; font-weight:bold;">Progress note:</label>
+            <textarea id="progressNote" placeholder="What have you done so far?" 
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
             <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; justify-content:center; align-items:center; left:50%; padding:10px; margin:10px 0; background: #149648;">
