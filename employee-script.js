@@ -159,6 +159,35 @@ async function loadDataFromDatabase() {
                 progress: row.progress || 0,
                 dueDate: row.due_date
             }));
+            
+            // AUTO-UPDATE DEPARTMENT: If user doesn't have a department but has tasks, update from first task
+            if ((!currentUser.department || currentUser.department === 'Not Assigned') && taskRows.length > 0) {
+                const taskDept = taskRows[0].department;
+                if (taskDept && taskDept !== 'Not Assigned') {
+                    // Update the department in the database
+                    try {
+                        const updateRes = await fetch('/api/update-profile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: currentUser.id,
+                                department: taskDept
+                            })
+                        });
+                        
+                        if (updateRes.ok) {
+                            currentUser.department = taskDept;
+                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                            updateUserHeader();
+                            loadProfileData(); // Refresh profile display
+                            console.log('Department automatically updated to:', taskDept);
+                        }
+                    } catch (err) {
+                        console.error('Failed to auto-update department:', err);
+                    }
+                }
+            }
+            
             updateTaskTable();
         }
 
@@ -308,7 +337,7 @@ function setupEventListeners() {
         const reportData = {
             user_id: currentUser.id,
             employee_name: currentUser.name, 
-            department: currentUser.department || 'Not Assigned', // allow submission without department
+            department: currentUser.department || 'Not Assigned',
             start_date: document.getElementById('startDate').value,
             end_date: document.getElementById('endDate').value,
             task_summary: document.getElementById('taskContent').value
