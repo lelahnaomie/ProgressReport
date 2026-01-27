@@ -584,7 +584,7 @@ function openTaskModal(taskId) {
             <textarea id="progressNote" placeholder="What have you done so far?" 
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
-            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; align-items:center; left:50%; padding:8px; margin:10px 50px; background: #149648;">
+            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; align-items:center; left:50%; padding:8px; margin:10px 10px 50px 0; background: #149648;">
                 Update progress
             </button>
         </div>
