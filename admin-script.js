@@ -58,9 +58,9 @@ function checkAdmin() {
     if (user.role !== 'admin') {
         window.location.href = 'index.html';
     }
-    else{
+    else {
         const loadingOverlay = document.getElementById('loading-overlay');
-        if(loadingOverlay){
+        if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
         }
     }
@@ -76,14 +76,14 @@ async function loadSettings() {
     try {
         // fetch fresh admin profile from database
         const profileRes = await fetch(`/api/get-profile?id=${currentUser.id}`);
-        
+
         if (profileRes.ok) {
             const freshUser = await profileRes.json();
-            
+
             // update current user with fresh data
             currentUser = { ...currentUser, ...freshUser };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
+
             // fill the settings form fields
             const nameField = document.getElementById('adminName');
             const emailField = document.getElementById('adminEmail');
@@ -91,7 +91,7 @@ async function loadSettings() {
 
             if (nameField) nameField.value = currentUser.name || '';
             if (emailField) emailField.value = currentUser.email || '';
-            
+
             // load notification preference from localStorage
             const savedSettings = localStorage.getItem('adminSettings');
             if (savedSettings && notifField) {
@@ -200,13 +200,11 @@ window.addEventListener('click', function (e) {
 async function loadData() {
     setLoading(true);
     try {
-        // 1. Fetch Valid Employees first (to get their departments)
         const empRes = await fetch('/api/get-employees');
         if (empRes.ok) {
             validEmployees = await empRes.json();
         }
 
-        // 2. Fetch Tasks
         const taskRes = await fetch('/api/get-tasks');
         if (taskRes.ok) {
             const tRows = await taskRes.json();
@@ -223,16 +221,13 @@ async function loadData() {
             }));
         }
 
-        // 3. Fetch Reports from Turso
         const reportRes = await fetch('/api/reports?action=getReports&user_id=1');
         if (reportRes.ok) {
             const rows = await reportRes.json();
             allReports = rows.map(row => {
-                // Find the employee's current department from validEmployees or tasks
                 const employee = validEmployees.find(emp => emp.name === row.employee_name);
                 const employeeTask = allAssignTasks.find(task => task.assigneeName === row.employee_name);
-                
-                // Priority: employee profile department > task department > report department
+
                 let actualDepartment = row.department;
                 if (employee && employee.department && employee.department !== 'Not Assigned') {
                     actualDepartment = employee.department;
@@ -244,7 +239,7 @@ async function loadData() {
                     id: row.id,
                     submitDate: new Date(row.submit_date),
                     name: row.employee_name || 'Unknown',
-                    dept: actualDepartment, // Use the corrected department
+                    dept: actualDepartment,
                     start: row.start_date,
                     end: row.end_date,
                     task: row.task_summary,
@@ -254,7 +249,7 @@ async function loadData() {
         }
 
         // Refresh UI
-        updateUI(); 
+        updateUI();
         updateTasksView();
 
     } catch (error) {
@@ -270,9 +265,9 @@ async function loadAdminTasksFromDatabase() {
         // Calling your API without an assignee_name gets ALL tasks for the Admin
         const res = await fetch('/api/get-tasks');
         if (!res.ok) throw new Error("Failed to fetch tasks");
-        
+
         const rows = await res.json();
-        
+
         // Map database columns to your frontend variable names
         allAssignTasks = rows.map(row => ({
             id: row.id,
@@ -285,7 +280,7 @@ async function loadAdminTasksFromDatabase() {
             dueDate: row.due_date
         }));
 
-        updateTaskTable(); // Re-render the UI with database data
+        updateTaskTable();
     } catch (error) {
         console.error("Admin sync error:", error);
     } finally {
@@ -319,13 +314,13 @@ function showSection(id, el) {
     document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
     const section = document.getElementById(id);
     if (section) section.style.display = 'block';
-    
+
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
     if (id === 'team-view') updateTeam();
     if (id === 'task-view') updateTasksView();
-    if (id === 'settings-view') loadSettings(); // load fresh settings from database
+    if (id === 'settings-view') loadSettings();
 }
 
 // handle logout
@@ -378,7 +373,6 @@ function setupTaskForm() {
         setLoading(true, btn, "Saving...");
 
         try {
-            // Step 1: Save the task to database
             const taskResponse = await fetch('/api/assign-task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -389,18 +383,15 @@ function setupTaskForm() {
                 throw new Error('Failed to save task to database');
             }
 
-            // Step 2: Update the employee's department in the users table
-            // Find the employee by name
             const employeeRes = await fetch(`/api/get-employees`);
             if (employeeRes.ok) {
                 const employees = await employeeRes.json();
                 const employee = employees.find(emp => emp.name === assigneeName);
-                
+
                 if (employee) {
-                    // Update employee's department if they don't have one or it's 'Not Assigned'
                     if (!employee.department || employee.department === 'Not Assigned') {
                         console.log(`Updating ${assigneeName}'s department to ${department}`);
-                        
+
                         const updateProfileRes = await fetch('/api/update-profile', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -421,10 +412,8 @@ function setupTaskForm() {
 
             showToast('Task assigned successfully!', 'success');
             assignform.reset();
-            
-            // Refresh the task list
             await loadAdminTasksFromDatabase();
-            
+
         } catch (error) {
             console.error(error);
             showToast('Sync error. Check connection.', 'error');
@@ -725,7 +714,7 @@ function addPaginationControls(tableId, totalItems, currentPageNum, type) {
     const paginationRow = document.createElement('tr');
 
     // Determine colspan based on table
-    let colspan = 7; // for reports table
+    let colspan = 7;
     if (tableId === 'task-row') colspan = 6;
     if (tableId === 'leaderboard-rows') colspan = 6;
 
@@ -865,7 +854,6 @@ function initCharts() {
 // chart update function
 function updateCharts(data) {
     if (charts.dept) {
-        // Use the corrected department from allReports (which now has updated departments)
         const deptCounts = ['Development', 'Marketing', 'Design', 'Operations Management'].map(d =>
             data.filter(r => r.dept === d).length
         );
@@ -903,17 +891,16 @@ function updateCharts(data) {
 function getTeamStats() {
     const stats = {};
     allReports.forEach(r => {
-        // Get employee's current department from validEmployees or tasks
         const employee = validEmployees.find(emp => emp.name === r.name);
         const employeeTask = allAssignTasks.find(task => task.assigneeName === r.name);
-        
+
         let currentDept = r.dept;
         if (employee && employee.department && employee.department !== 'Not Assigned') {
             currentDept = employee.department;
         } else if (employeeTask && employeeTask.dept && employeeTask.dept !== 'Not Assigned') {
             currentDept = employeeTask.dept;
         }
-        
+
         if (!stats[r.name]) stats[r.name] = { total: 0, approved: 0, dept: currentDept };
         stats[r.name].total++;
         if (r.status === 'Approved') stats[r.name].approved++;
@@ -938,23 +925,21 @@ function updateTeam() {
     const avgEl = document.getElementById('avgReports');
     if (avgEl) avgEl.textContent = empCount > 0 ? (allReports.length / empCount).toFixed(1) : 0;
 
-    // Calculate department counts using employee's current departments
     const deptCounts = {};
     allReports.forEach(r => {
-        // Get employee's current department
         const employee = validEmployees.find(emp => emp.name === r.name);
         const employeeTask = allAssignTasks.find(task => task.assigneeName === r.name);
-        
+
         let currentDept = r.dept;
         if (employee && employee.department && employee.department !== 'Not Assigned') {
             currentDept = employee.department;
         } else if (employeeTask && employeeTask.dept && employeeTask.dept !== 'Not Assigned') {
             currentDept = employeeTask.dept;
         }
-        
+
         deptCounts[currentDept] = (deptCounts[currentDept] || 0) + 1;
     });
-    
+
     let topDept = '-', maxDept = 0;
     Object.keys(deptCounts).forEach(d => {
         if (deptCounts[d] > maxDept) {
@@ -1173,19 +1158,14 @@ async function saveSettings() {
         const result = await response.json();
 
         if (response.ok) {
-            // update local user object
             currentUser.name = newName;
             currentUser.email = newEmail;
 
-            // save to localStorage
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            // save notification preference separately
+
             localStorage.setItem('adminSettings', JSON.stringify({ notif: notifPref }));
-            
-            // update header to reflect new name
             updateUserHeader();
-            
+
             showToast('settings saved successfully', 'success');
         } else {
             showToast(result.error || 'failed to update settings', 'error');

@@ -1,4 +1,3 @@
-// api/update-profile.js
 import { createClient } from "@libsql/client";
 
 export default async function handler(req, res) {

@@ -7,7 +7,6 @@ const client = createClient({
 
 export default async function handler(req, res) {
   try {
-    // We only want to fetch users who have the role 'employee'
     const result = await client.execute("SELECT name FROM users WHERE role = 'employee'");
     const names = result.rows.map(row => row.name);
     return res.status(200).json(names);

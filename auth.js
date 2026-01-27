@@ -146,7 +146,7 @@ async function handleLogin(e) {
         const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // The 'action' must be INSIDE the body object
+           
             body: JSON.stringify({ 
                 action: 'login', 
                 email: email, 
@@ -157,17 +157,14 @@ async function handleLogin(e) {
         const result = await response.json();
 
         if (response.ok) {
-            // 1. Save data for persistence
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('currentUser', JSON.stringify(result.user));
             
-            // 2. Generate the role token for your security check
             const token = generateRoleToken(result.user.email, result.user.role);
             localStorage.setItem('roleToken', token);
 
             showToast(`Welcome back, ${result.user.name}!`, 'success');
 
-            // 3. Redirect based on role returned from DB
             setTimeout(() => {
                 if (result.user.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
@@ -239,7 +236,6 @@ function verifyAccess(requiredRole) {
             return false;
         }
 
-        //check users role
         if (user.role !== requiredRole) {
             showToast('Access denied.', 'error');
             setTimeout(() => {

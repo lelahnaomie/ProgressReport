@@ -1,4 +1,3 @@
-// api/get-tasks.js
 import { createClient } from '@libsql/client';
 
 const client = createClient({
@@ -17,7 +16,6 @@ export default async function handler(req, res) {
     let sql = "SELECT * FROM tasks ORDER BY assigned_date DESC";
     let args = [];
 
-    // if assignee_name is provided, filter by it
     if (assignee_name) {
       sql = "SELECT * FROM tasks WHERE assignee_name = ? ORDER BY assigned_date DESC";
       args = [assignee_name];

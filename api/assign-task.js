@@ -1,4 +1,3 @@
-// api/assign-task.js
 import { createClient } from '@libsql/client';
 
 const client = createClient({
@@ -29,7 +28,6 @@ export default async function handler(req, res) {
   try {
     console.log('attempting to insert task...');
     
-    // CHANGE 'tasks' to your actual table name if different
     const result = await client.execute({
       sql: `INSERT INTO tasks 
             (assignee_name, department, due_date, task_content, assigned_date, status, progress) 

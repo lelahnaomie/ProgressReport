@@ -44,7 +44,7 @@ function setLoading(isLoading, btn, customText = "Loading...") {
 document.addEventListener('DOMContentLoaded', () => {
     checkEmployee();
     updateUserHeader();
-    loadDataFromDatabase(); 
+    loadDataFromDatabase();
     setupEventListeners();
 });
 
@@ -53,13 +53,13 @@ function checkEmployee() {
     if (!currentUser || currentUser.role !== 'employee') {
         window.location.href = 'index.html';
     }
-    else{
+    else {
         const loadingOverlay = document.getElementById('loading-overlay');
         const dashboardContent = document.getElementsByClassName('dashboard-wrapper')
-        if(loadingOverlay){
+        if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
         }
-        if(dashboardContent){}
+        if (dashboardContent) { }
         loadDataFromDatabase();
         updateUserHeader();
     }
@@ -97,13 +97,13 @@ document.querySelectorAll('.nav-item').forEach(item => {
     });
 });
 
-// toggle dropdown menu
+
 function toggleDropdown() {
     const dropdown = document.getElementById('profileDropdown');
     dropdown.classList.toggle('show');
 }
 
-// close dropdown when clicking outside
+
 window.addEventListener('click', function (e) {
     if (!e.target.closest('.dropdown')) {
         const dropdown = document.getElementById('profileDropdown');
@@ -119,14 +119,14 @@ async function loadDataFromDatabase() {
         console.error('no current user found');
         return;
     }
-    
+
     setLoading(true);
 
     try {
-        // Step 1: Fetch tasks first to get department assignment
+
         const taskRes = await fetch(`/api/get-tasks?assignee_name=${encodeURIComponent(currentUser.name)}`);
         let taskDepartment = null;
-        
+
         if (taskRes.ok) {
             const taskRows = await taskRes.json();
             allAssignTasks = taskRows.map(row => ({
@@ -139,35 +139,26 @@ async function loadDataFromDatabase() {
                 progress: row.progress || 0,
                 dueDate: row.due_date
             }));
-            
-            // Get department from first task if available
+
             if (taskRows.length > 0 && taskRows[0].department) {
                 taskDepartment = taskRows[0].department;
             }
         }
 
-        // Step 2: Fetch updated profile from database
         const profileRes = await fetch(`/api/get-profile?id=${currentUser.id}`);
-        
+
         if (profileRes.ok) {
             const freshUser = await profileRes.json();
-            
-            // PRIORITY LOGIC FOR DEPARTMENT:
-            // 1. Use department from database if it exists and is not 'Not Assigned'
-            // 2. Otherwise, use department from task assignment
-            // 3. Otherwise, keep as 'Not Assigned'
-            
+
             let finalDepartment = 'Not Assigned';
-            
+
             if (freshUser.department && freshUser.department !== 'Not Assigned') {
-                // Database has a valid department - use it
                 finalDepartment = freshUser.department;
                 console.log('Using department from database:', finalDepartment);
             } else if (taskDepartment && taskDepartment !== 'Not Assigned') {
-                // No valid department in database, but task has one - update database
                 finalDepartment = taskDepartment;
                 console.log('Updating department from task assignment:', finalDepartment);
-                
+
                 try {
                     const updateRes = await fetch('/api/update-profile', {
                         method: 'POST',
@@ -177,7 +168,7 @@ async function loadDataFromDatabase() {
                             department: taskDepartment
                         })
                     });
-                    
+
                     if (updateRes.ok) {
                         console.log('Database updated with task department');
                     }
@@ -185,23 +176,21 @@ async function loadDataFromDatabase() {
                     console.error('Failed to update department in database:', err);
                 }
             }
-            
-            // Update currentUser with fresh data and final department
-            currentUser = { 
-                ...currentUser, 
+            currentUser = {
+                ...currentUser,
                 ...freshUser,
-                department: finalDepartment 
+                department: finalDepartment
             };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             updateUserHeader();
-            
+
             const profileSection = document.getElementById('profile-view');
             if (profileSection && profileSection.style.display !== 'none') {
                 loadProfileData();
             }
         }
 
-        // Step 3: Fetch reports (now using updated department)
+
         const reportRes = await fetch(`/api/reports?user_id=${currentUser.id}&role=${currentUser.role}`);
         if (reportRes.ok) {
             const reportRows = await reportRes.json();
@@ -209,7 +198,7 @@ async function loadDataFromDatabase() {
                 id: row.id,
                 submitDate: row.submit_date,
                 name: row.employee_name,
-                dept: currentUser.department || row.department, // Use current user's department
+                dept: currentUser.department || row.department, 
                 start: row.start_date,
                 end: row.end_date,
                 task: row.task_summary,
@@ -218,7 +207,6 @@ async function loadDataFromDatabase() {
             updateReportsTable();
         }
 
-        // Step 4: Update task table
         updateTaskTable();
 
     } catch (error) {
@@ -231,7 +219,7 @@ async function loadDataFromDatabase() {
 
 function loadProfileData() {
     const userStr = localStorage.getItem('currentUser');
-    
+
     if (!userStr) {
         window.location.href = 'index.html';
         return;
@@ -244,15 +232,15 @@ function loadProfileData() {
     const profileRole = document.getElementById('profile-role');
     if (profileName) profileName.textContent = user.name;
     if (profileRole) profileRole.textContent = user.role || 'Employee';
-    
+
     // fill the editable input fields
     const nameField = document.getElementById('profileName');
     const emailField = document.getElementById('profileEmail');
     const deptField = document.getElementById('profileDept');
-    
+
     if (nameField) nameField.value = user.name || '';
     if (emailField) emailField.value = user.email || '';
-    
+
     // department is read-only assigned by admin
     if (deptField) {
         deptField.value = user.department || 'Not Assigned';
@@ -269,7 +257,7 @@ async function markTaskComplete(taskId) {
 
 async function deleteTask(taskId) {
     if (!confirm('are you sure you want to delete this task? this cannot be undone.')) return;
-    
+
     setLoading(true);
     try {
         const response = await fetch('/api/delete-task', {
@@ -280,7 +268,7 @@ async function deleteTask(taskId) {
 
         if (response.ok) {
             showToast('task deleted successfully', 'warning');
-            await loadDataFromDatabase(); 
+            await loadDataFromDatabase();
             closeModal();
         } else {
             showToast('delete failed', 'error');
@@ -296,7 +284,7 @@ async function deleteTask(taskId) {
 async function updateMyProgress(taskId, overrideProgress = null, overrideNote = null) {
     const progressSlider = document.getElementById('progressSlider');
     const progressNote = document.getElementById('progressNote');
-    
+
     const newProgress = overrideProgress !== null ? overrideProgress : parseInt(progressSlider.value);
     const note = overrideNote !== null ? overrideNote : (progressNote ? progressNote.value.trim() : '');
 
@@ -313,13 +301,13 @@ async function updateMyProgress(taskId, overrideProgress = null, overrideNote = 
                 id: taskId,
                 progress: newProgress,
                 status: newStatus,
-                update_note: note 
+                update_note: note
             })
         });
 
         if (response.ok) {
             showToast('progress updated successfully', 'success');
-            await loadDataFromDatabase(); 
+            await loadDataFromDatabase();
             closeModal();
         } else {
             const errorData = await response.json();
@@ -333,7 +321,6 @@ async function updateMyProgress(taskId, overrideProgress = null, overrideNote = 
         setLoading(false);
     }
 }
-
 function showSection(id, el) {
     document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
     const target = document.getElementById(id);
@@ -341,10 +328,18 @@ function showSection(id, el) {
 
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
+
+    // auto-fill name and department when showing submit report section
     if (id === 'submit-view') {
+        const nameField = document.getElementById('staffName');
         const deptField = document.getElementById('staffDept');
-        if (deptField && currentUser.department) {
-            deptField.value = currentUser.department;
+        
+        if (nameField && currentUser.name) {
+            nameField.value = currentUser.name;
+        }
+        
+        if (deptField) {
+            deptField.value = currentUser.department || 'Not Assigned';
         }
     }
 
@@ -353,7 +348,6 @@ function showSection(id, el) {
         loadDataFromDatabase();
     }
 }
-
 function setupEventListeners() {
     const form = document.getElementById('submissionForm');
     if (!form) return;
@@ -366,7 +360,7 @@ function setupEventListeners() {
 
         const reportData = {
             user_id: currentUser.id,
-            employee_name: currentUser.name, 
+            employee_name: currentUser.name,
             department: currentUser.department || 'Not Assigned',
             start_date: document.getElementById('startDate').value,
             end_date: document.getElementById('endDate').value,
@@ -375,24 +369,24 @@ function setupEventListeners() {
 
         try {
             console.log('submitting report with data:', reportData);
-            
+
             const response = await fetch('/api/reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'submit', 
+                    action: 'submit',
                     ...reportData
                 })
             });
 
             console.log('response status:', response.status);
-            
+
             if (response.ok) {
                 const result = await response.json();
                 console.log('success response:', result);
                 showToast('report submitted successfully', 'success');
                 form.reset();
-                await loadDataFromDatabase(); 
+                await loadDataFromDatabase();
                 showSection('my-reports-view');
             } else {
                 const err = await response.json();
@@ -582,7 +576,7 @@ function openTaskModal(taskId) {
             <h3>update progress</h3>
             
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span>completion: <strong id="progressValue">${progress}%</strong></span>
+                <span> <strong id="progressValue">${progress}%</strong></span>
             </div>
             <input type="range" id="progressSlider" min="0" max="100" value="${progress}" 
                    style="width: 100%; margin-bottom: 15px;"
@@ -592,7 +586,7 @@ function openTaskModal(taskId) {
             <textarea id="progressNote" placeholder="what have you done so far?" 
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
-            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 50%; border:1px solid #149648; border-radius: 4px; justify-content:center; padding:10px; margin:10px 0; background: #149648;">
+            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 50%; border:1px solid #149648; border-radius: 4px; justify-content:center; align-items:center;padding:10px; margin:10px 0; background: #149648;">
                 update progress
             </button>
         </div>
@@ -645,7 +639,7 @@ function handleLogout() {
     }
 }
 
-// profile functions
+// save profile
 async function saveProfile() {
     const saveBtn = document.querySelector('#profile-view .btn');
     setLoading(true, saveBtn, "saving...");
@@ -691,11 +685,11 @@ async function saveProfile() {
         setLoading(false, saveBtn);
     }
 }
-
+//save employee settings
 function saveSettings() {
     const saveBtn = document.querySelector('#settings-view .btn');
     setLoading(true, saveBtn, "saving...");
-    
+
     const emailNotif = document.getElementById('emailNotif').value;
     const reminderPref = document.getElementById('reminderPref').value;
     const langPref = document.getElementById('langPref').value;
