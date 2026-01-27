@@ -3,6 +3,7 @@
     display: flex;
     min-height: 100vh;
     background: #f5f7fa;
+    /* display:none; */
 }
 
 .dropdown {
