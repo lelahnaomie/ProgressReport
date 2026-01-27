@@ -334,6 +334,7 @@ function addReport(name, dept, start, end, task, silent = false) {
     updateUI();
     if (!silent) showToast('report submitted successfully!', 'success');
 }
+
 function setupTaskForm() {
     const assignform = document.getElementById('assignForm');
     if (!assignform) return;
@@ -342,30 +343,68 @@ function setupTaskForm() {
         e.preventDefault();
         const btn = e.submitter;
 
+        const assigneeName = document.getElementById('assignName').value.trim();
+        const department = document.getElementById('assignDept').value;
+        const dueDate = document.getElementById('dueDate').value;
+        const taskContent = document.getElementById('assignTask').value;
+
         const taskData = {
-            assignee_name: document.getElementById('assignName').value.trim(),
-            department: document.getElementById('assignDept').value,
-            due_date: document.getElementById('dueDate').value,
-            task_content: document.getElementById('assignTask').value
+            assignee_name: assigneeName,
+            department: department,
+            due_date: dueDate,
+            task_content: taskContent
         };
 
         setLoading(true, btn, "Saving...");
 
         try {
-            const response = await fetch('/api/assign-task', {
+            // Step 1: Save the task to database
+            const taskResponse = await fetch('/api/assign-task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(taskData)
             });
 
-            if (response.ok) {
-                showToast('Task assigned!', 'success');
-                assignform.reset();
-                // IMPORTANT: Fetch the fresh list from the database immediately
-                await loadAdminTasksFromDatabase(); 
-            } else {
-                throw new Error('Failed to save to database');
+            if (!taskResponse.ok) {
+                throw new Error('Failed to save task to database');
             }
+
+            // Step 2: Update the employee's department in the users table
+            // Find the employee by name
+            const employeeRes = await fetch(`/api/get-employees`);
+            if (employeeRes.ok) {
+                const employees = await employeeRes.json();
+                const employee = employees.find(emp => emp.name === assigneeName);
+                
+                if (employee) {
+                    // Update employee's department if they don't have one or it's 'Not Assigned'
+                    if (!employee.department || employee.department === 'Not Assigned') {
+                        console.log(`Updating ${assigneeName}'s department to ${department}`);
+                        
+                        const updateProfileRes = await fetch('/api/update-profile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: employee.id,
+                                department: department
+                            })
+                        });
+
+                        if (updateProfileRes.ok) {
+                            console.log('Employee department updated successfully');
+                        } else {
+                            console.error('Failed to update employee department');
+                        }
+                    }
+                }
+            }
+
+            showToast('Task assigned successfully!', 'success');
+            assignform.reset();
+            
+            // Refresh the task list
+            await loadAdminTasksFromDatabase();
+            
         } catch (error) {
             console.error(error);
             showToast('Sync error. Check connection.', 'error');
@@ -374,6 +413,7 @@ function setupTaskForm() {
         }
     });
 }
+
 // Update tasks table view
 function updateTasksView() {
     const tbody = document.getElementById('task-row');
@@ -521,28 +561,6 @@ function updateTaskProgress(taskId) {
     // Refresh the modal to show updated data
     openTaskModal(taskId);
 }
-
-// Mark task as complete
-// function markTaskComplete(taskId) {
-//     if (!confirm('Mark this task as 100% complete?')) return;
-
-//     const task = allAssignTasks.find(t => t.id === taskId);
-//     if (!task) return;
-
-//     task.status = 'Completed';
-//     task.progress = 100;
-//     task.updates = task.updates || [];
-//     task.updates.unshift({
-//         progress: 100,
-//         date: new Date().toISOString(),
-//         note: 'Task marked as complete by admin'
-//     });
-
-//     saveData();
-//     updateTasksView();
-//     closeModal();
-//     showToast('Task marked as complete!', 'success');
-// }
 
 // Delete task
 async function deleteTask(taskId) {
@@ -921,8 +939,6 @@ function updateTeam() {
                 <td>${emp.approved}</td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="flex: 1; background: #e0e0e0; height: 20px; border-radius: 10px;// Continuing from where it was cut off...
-
                         <div style="flex: 1; background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden;">
                             <div style="width: ${perf}%; background: #149648; height: 100%; transition: width 0.3s ease;"></div>
                         </div>

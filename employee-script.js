@@ -113,12 +113,75 @@ async function loadDataFromDatabase() {
     setLoading(true);
 
     try {
-        // fetch updated profile
+        // Step 1: Fetch tasks first to get department assignment
+        const taskRes = await fetch(`/api/get-tasks?assignee_name=${encodeURIComponent(currentUser.name)}`);
+        let taskDepartment = null;
+        
+        if (taskRes.ok) {
+            const taskRows = await taskRes.json();
+            allAssignTasks = taskRows.map(row => ({
+                id: row.id,
+                assignedDate: row.assigned_date,
+                assigneeName: row.assignee_name,
+                dept: row.department,
+                task: row.task_content,
+                status: row.status,
+                progress: row.progress || 0,
+                dueDate: row.due_date
+            }));
+            
+            // Get department from first task if available
+            if (taskRows.length > 0 && taskRows[0].department) {
+                taskDepartment = taskRows[0].department;
+            }
+        }
+
+        // Step 2: Fetch updated profile from database
         const profileRes = await fetch(`/api/get-profile?id=${currentUser.id}`);
         
         if (profileRes.ok) {
             const freshUser = await profileRes.json();
-            currentUser = { ...currentUser, ...freshUser };
+            
+            // PRIORITY LOGIC FOR DEPARTMENT:
+            // 1. Use department from database if it exists and is not 'Not Assigned'
+            // 2. Otherwise, use department from task assignment
+            // 3. Otherwise, keep as 'Not Assigned'
+            
+            let finalDepartment = 'Not Assigned';
+            
+            if (freshUser.department && freshUser.department !== 'Not Assigned') {
+                // Database has a valid department - use it
+                finalDepartment = freshUser.department;
+                console.log('Using department from database:', finalDepartment);
+            } else if (taskDepartment && taskDepartment !== 'Not Assigned') {
+                // No valid department in database, but task has one - update database
+                finalDepartment = taskDepartment;
+                console.log('Updating department from task assignment:', finalDepartment);
+                
+                try {
+                    const updateRes = await fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: currentUser.id,
+                            department: taskDepartment
+                        })
+                    });
+                    
+                    if (updateRes.ok) {
+                        console.log('Database updated with task department');
+                    }
+                } catch (err) {
+                    console.error('Failed to update department in database:', err);
+                }
+            }
+            
+            // Update currentUser with fresh data and final department
+            currentUser = { 
+                ...currentUser, 
+                ...freshUser,
+                department: finalDepartment 
+            };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             updateUserHeader();
             
@@ -128,7 +191,7 @@ async function loadDataFromDatabase() {
             }
         }
 
-        // fetch reports
+        // Step 3: Fetch reports (now using updated department)
         const reportRes = await fetch(`/api/reports?user_id=${currentUser.id}&role=${currentUser.role}`);
         if (reportRes.ok) {
             const reportRows = await reportRes.json();
@@ -145,51 +208,8 @@ async function loadDataFromDatabase() {
             updateReportsTable();
         }
 
-        // fetch tasks
-        const taskRes = await fetch(`/api/get-tasks?assignee_name=${encodeURIComponent(currentUser.name)}`);
-        if (taskRes.ok) {
-            const taskRows = await taskRes.json();
-            allAssignTasks = taskRows.map(row => ({
-                id: row.id,
-                assignedDate: row.assigned_date,
-                assigneeName: row.assignee_name,
-                dept: row.department,
-                task: row.task_content,
-                status: row.status,
-                progress: row.progress || 0,
-                dueDate: row.due_date
-            }));
-            
-            // AUTO-UPDATE DEPARTMENT: If user doesn't have a department but has tasks, update from first task
-            if ((!currentUser.department || currentUser.department === 'Not Assigned') && taskRows.length > 0) {
-                const taskDept = taskRows[0].department;
-                if (taskDept && taskDept !== 'Not Assigned') {
-                    // Update the department in the database
-                    try {
-                        const updateRes = await fetch('/api/update-profile', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                id: currentUser.id,
-                                department: taskDept
-                            })
-                        });
-                        
-                        if (updateRes.ok) {
-                            currentUser.department = taskDept;
-                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                            updateUserHeader();
-                            loadProfileData(); // Refresh profile display
-                            console.log('Department automatically updated to:', taskDept);
-                        }
-                    } catch (err) {
-                        console.error('Failed to auto-update department:', err);
-                    }
-                }
-            }
-            
-            updateTaskTable();
-        }
+        // Step 4: Update task table
+        updateTaskTable();
 
     } catch (error) {
         console.error('data synchronization error:', error);
