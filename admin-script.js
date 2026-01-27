@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData();
     setupTaskForm();
     initCharts();
-    loadSettings();
+    // loadSettings();
 });
 
 // check if user is admin
@@ -59,20 +59,46 @@ function checkAdmin() {
         window.location.href = 'index.html';
     }
 }
+async function loadSettings() {
+    if (!currentUser || !currentUser.id) {
+        console.error('no current user found');
+        return;
+    }
 
-function loadSettings() {
-    const savedSettings = localStorage.getItem('adminSettings');
-    if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
+    setLoading(true);
+
+    try {
+        // fetch fresh admin profile from database
+        const profileRes = await fetch(`/api/get-profile?id=${currentUser.id}`);
         
-        // Fill the input fields so you can see them/change them
-        const nameField = document.getElementById('adminName');
-        const emailField = document.getElementById('adminEmail');
-        const notifField = document.getElementById('notifPref');
+        if (profileRes.ok) {
+            const freshUser = await profileRes.json();
+            
+            // update current user with fresh data
+            currentUser = { ...currentUser, ...freshUser };
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // fill the settings form fields
+            const nameField = document.getElementById('adminName');
+            const emailField = document.getElementById('adminEmail');
+            const notifField = document.getElementById('notifPref');
 
-        if (nameField) nameField.value = settings.name || '';
-        if (emailField) emailField.value = settings.email || '';
-        if (notifField) notifField.value = settings.notif || 'email';
+            if (nameField) nameField.value = currentUser.name || '';
+            if (emailField) emailField.value = currentUser.email || '';
+            
+            // load notification preference from localStorage
+            const savedSettings = localStorage.getItem('adminSettings');
+            if (savedSettings && notifField) {
+                const settings = JSON.parse(savedSettings);
+                notifField.value = settings.notif || 'all reports';
+            }
+        } else {
+            console.error('failed to fetch admin profile');
+        }
+    } catch (error) {
+        console.error('load settings error:', error);
+    } finally {
+        setLoading(false);
     }
 }
 
@@ -271,12 +297,15 @@ function showToast(msg, type = 'success') {
 // navigation logic
 function showSection(id, el) {
     document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
-    document.getElementById(id).style.display = 'block';
+    const section = document.getElementById(id);
+    if (section) section.style.display = 'block';
+    
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
 
     if (id === 'team-view') updateTeam();
     if (id === 'task-view') updateTasksView();
+    if (id === 'settings-view') loadSettings(); // load fresh settings from database
 }
 
 // handle logout
@@ -1050,13 +1079,60 @@ function exportExcel() {
 }
 
 // settings
-function saveSettings() {
-    const name = document.getElementById('adminName').value;
-    const email = document.getElementById('adminEmail').value;
-    const notif = document.getElementById('notifPref').value;
+async function saveSettings() {
+    const saveBtn = document.querySelector('#settings-view .btn');
+    setLoading(true, saveBtn, "saving...");
 
-    localStorage.setItem('adminSettings', JSON.stringify({ name, email, notif }));
-    showToast('settings saved successfully!', 'success');
+    const newName = document.getElementById('adminName').value.trim();
+    const newEmail = document.getElementById('adminEmail').value.trim();
+    const notifPref = document.getElementById('notifPref').value;
+
+    if (!newName || !newEmail) {
+        showToast('name and email are required', 'error');
+        setLoading(false, saveBtn);
+        return;
+    }
+
+    const profileData = {
+        id: currentUser.id,
+        name: newName,
+        email: newEmail
+    };
+
+    try {
+        // update profile in database
+        const response = await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // update local user object
+            currentUser.name = newName;
+            currentUser.email = newEmail;
+
+            // save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // save notification preference separately
+            localStorage.setItem('adminSettings', JSON.stringify({ notif: notifPref }));
+            
+            // update header to reflect new name
+            updateUserHeader();
+            
+            showToast('settings saved successfully', 'success');
+        } else {
+            showToast(result.error || 'failed to update settings', 'error');
+        }
+    } catch (error) {
+        console.error('save settings error:', error);
+        showToast('server connection error', 'error');
+    } finally {
+        setLoading(false, saveBtn);
+    }
 }
 
 function clearAllData() {
