@@ -55,13 +55,13 @@ function checkEmployee() {
     }
     else{
         const loadingOverlay = document.getElementById('loading-overlay');
-        const dashboardContent = document.querySelector('.dashboard-wrapper');
+        const dashboardContent = document.getElementsByClassName('dashboard-wrapper')
         if(loadingOverlay){
             loadingOverlay.style.display = 'none';
         }
-        if(dashboardContent){
-            dashboardContent.style.display = 'flex'
-        }
+        if(dashboardContent){}
+        loadDataFromDatabase();
+        updateUserHeader();
     }
 }
 
