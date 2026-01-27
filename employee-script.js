@@ -250,12 +250,12 @@ function loadProfileData() {
 }
 
 async function markTaskComplete(taskId) {
-    if (!confirm('mark this task as 100% finished?')) return;
-    await updateMyProgress(taskId, 100, "task marked as complete by employee.");
+    if (!confirm('Mark this task as 100% finished?')) return;
+    await updateMyProgress(taskId, 100, "Task marked as complete by employee.");
 }
 
 async function deleteTask(taskId) {
-    if (!confirm('are you sure you want to delete this task? this cannot be undone.')) return;
+    if (!confirm('Are you sure you want to delete this task? This cannot be undone.')) return;
 
     setLoading(true);
     try {
@@ -567,7 +567,7 @@ function openTaskModal(taskId) {
         <h2>Task details</h2>
         
         <div class="task-box" style="margin-bottom: 20px;">
-            <strong>task:</strong> ${task.task}
+            <strong>Task:</strong> ${task.task}
         </div>
 
         <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
@@ -584,7 +584,7 @@ function openTaskModal(taskId) {
             <textarea id="progressNote" placeholder="What have you done so far?" 
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
-            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; justify-content:center; align-items:center; left:50%; padding:10px; margin:10px 0; background: #149648;">
+            <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; align-items:center; left:50%; padding:10px; margin:10px 0; background: #149648;">
                 Update progress
             </button>
         </div>
