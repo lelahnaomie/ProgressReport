@@ -211,7 +211,7 @@ async function loadDataFromDatabase() {
 
     } catch (error) {
         console.error('data synchronization error:', error);
-        showToast('failed to sync data with server', 'error');
+        showToast('Failed to sync data with server', 'error');
     } finally {
         setLoading(false);
     }
@@ -266,15 +266,15 @@ async function deleteTask(taskId) {
         });
 
         if (response.ok) {
-            showToast('task deleted successfully', 'warning');
+            showToast('Task deleted successfully', 'warning');
             await loadDataFromDatabase();
             closeModal();
         } else {
-            showToast('delete failed', 'error');
+            showToast('Delete failed', 'error');
         }
     } catch (error) {
         console.error('delete task error:', error);
-        showToast('connection error', 'error');
+        showToast('Connection error', 'error');
     } finally {
         setLoading(false);
     }
@@ -305,17 +305,17 @@ async function updateMyProgress(taskId, overrideProgress = null, overrideNote = 
         });
 
         if (response.ok) {
-            showToast('progress updated successfully', 'success');
+            showToast('Progress updated successfully', 'success');
             await loadDataFromDatabase();
             closeModal();
         } else {
             const errorData = await response.json();
             console.error('update progress error:', errorData);
-            showToast('failed to update server', 'error');
+            showToast('Failed to update', 'error');
         }
     } catch (error) {
         console.error('update progress error:', error);
-        showToast('connection error', 'error');
+        showToast('Connection error', 'error');
     } finally {
         setLoading(false);
     }
@@ -354,7 +354,7 @@ function setupEventListeners() {
         e.preventDefault();
         const submitBtn = form.querySelector('button[type="submit"]');
 
-        setLoading(true, submitBtn, "submitting...");
+        setLoading(true, submitBtn, "Submitting...");
 
         const reportData = {
             user_id: currentUser.id,
@@ -382,18 +382,18 @@ function setupEventListeners() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('success response:', result);
-                showToast('report submitted successfully', 'success');
+                showToast('Report submitted successfully', 'success');
                 form.reset();
                 await loadDataFromDatabase();
                 showSection('my-reports-view');
             } else {
                 const err = await response.json();
                 console.error('error response:', err);
-                showToast(err.error || 'submission failed', 'error');
+                showToast(err.error || 'Submission failed', 'error');
             }
         } catch (error) {
             console.error('submit error:', error);
-            showToast('server connection error', 'error');
+            showToast('Server connection error', 'error');
         } finally {
             setLoading(false, submitBtn);
         }
@@ -564,14 +564,14 @@ function openTaskModal(taskId) {
 
     modalContent.innerHTML = `
         <span class="close" onclick="closeModal()">&times;</span>
-        <h2>task details</h2>
+        <h2>Task details</h2>
         
         <div class="task-box" style="margin-bottom: 20px;">
             <strong>task:</strong> ${task.task}
         </div>
 
         <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
-            <h3>update progress</h3>
+            <h3>Update progress</h3>
             
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                 <span> <strong id="progressValue">${progress}%</strong></span>
@@ -585,16 +585,16 @@ function openTaskModal(taskId) {
                       style="width: 100%; height: 60px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px;"></textarea>
 
             <button class="btn-approve" onclick="updateMyProgress(${task.id})" style="width: 45%; border:1px solid #149648; border-radius: 4px; justify-content:center; align-items:center; left: 10px; padding:10px; margin:10px 0; background: #149648;">
-                update progress
+                Update progress
             </button>
         </div>
 
         <div class="action-buttons" style="margin-top: 20px; display: flex; gap: 10px;">
             <button class="btn-approve" onclick="markTaskComplete(${task.id})" style="flex: 1; background: #27ae60;">
-                <i class="fas fa-check-double"></i> mark completed
+                <i class="fas fa-check-double"></i> Mark completed
             </button>
             <button class="btn-reject" onclick="deleteTask(${task.id})" style="flex: 1; background: #e74c3c;">
-                <i class="fas fa-trash"></i> delete
+                <i class="fas fa-trash"></i> Delete
             </button>
         </div>
     `;
@@ -628,7 +628,7 @@ function showToast(msg, type = 'success') {
 function handleLogout() {
     if (confirm('are you sure you want to logout?')) {
         const logoutBtn = document.getElementById('log-btn');
-        setLoading(true, logoutBtn, "logging out...");
+        setLoading(true, logoutBtn, "Logging out...");
 
         setTimeout(() => {
             localStorage.removeItem('currentUser');
@@ -640,13 +640,13 @@ function handleLogout() {
 // save profile
 async function saveProfile() {
     const saveBtn = document.querySelector('#profile-view .btn');
-    setLoading(true, saveBtn, "saving...");
+    setLoading(true, saveBtn, "Saving...");
 
     const newName = document.getElementById('profileName').value.trim();
     const newEmail = document.getElementById('profileEmail').value.trim();
 
     if (!newName || !newEmail) {
-        showToast('name and email are required', 'error');
+        showToast('Name and Email are required', 'error');
         setLoading(false, saveBtn);
         return;
     }
@@ -672,13 +672,13 @@ async function saveProfile() {
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             updateUserHeader();
             loadProfileData();
-            showToast('profile updated successfully', 'success');
+            showToast('Profile updated successfully', 'success');
         } else {
-            showToast(result.error || 'failed to update profile', 'error');
+            showToast(result.error || 'Failed to update profile', 'error');
         }
     } catch (error) {
         console.error('profile update error:', error);
-        showToast('server connection error', 'error');
+        showToast('Server connection error', 'error');
     } finally {
         setLoading(false, saveBtn);
     }
@@ -686,7 +686,7 @@ async function saveProfile() {
 //save employee settings
 function saveSettings() {
     const saveBtn = document.querySelector('#settings-view .btn');
-    setLoading(true, saveBtn, "saving...");
+    setLoading(true, saveBtn, "Saving...");
 
     const emailNotif = document.getElementById('emailNotif').value;
     const reminderPref = document.getElementById('reminderPref').value;
@@ -699,7 +699,7 @@ function saveSettings() {
     };
 
     localStorage.setItem('employeeSettings', JSON.stringify(settings));
-    showToast('settings saved successfully', 'success');
+    showToast('Settings saved successfully', 'success');
     setLoading(false, saveBtn);
 }
 

@@ -347,7 +347,7 @@ function addReport(name, dept, start, end, task, silent = false) {
     });
     saveData();
     updateUI();
-    if (!silent) showToast('report submitted successfully!', 'success');
+    if (!silent) showToast('Report submitted successfully!', 'success');
 }
 
 function setupTaskForm() {
@@ -567,7 +567,6 @@ function updateTaskProgress(taskId) {
     updateTasksView();
     showToast('Task progress updated successfully!', 'success');
 
-    // Refresh the modal to show updated data
     openTaskModal(taskId);
 }
 
@@ -1070,7 +1069,7 @@ async function rejectReport() {
             report.status = 'Rejected';
             updateUI();
             closeModal();
-            showToast('Report rejected and synced!', 'error');
+            showToast('Report rejected', 'error');
         }
     } catch (error) {
         showToast('Failed to update server', 'error');
@@ -1105,7 +1104,7 @@ function exportPDF() {
     });
 
     doc.save("customerpull-report.pdf");
-    showToast('pdf exported successfully!', 'success');
+    showToast('PDF exported successfully!', 'success');
 }
 
 function exportExcel() {
@@ -1123,20 +1122,20 @@ function exportExcel() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Reports");
     XLSX.writeFile(wb, "customerpull-reports.xlsx");
-    showToast('excel exported successfully!', 'success');
+    showToast('Excel exported successfully!', 'success');
 }
 
 // settings
 async function saveSettings() {
     const saveBtn = document.querySelector('#settings-view .btn');
-    setLoading(true, saveBtn, "saving...");
+    setLoading(true, saveBtn, "Saving...");
 
     const newName = document.getElementById('adminName').value.trim();
     const newEmail = document.getElementById('adminEmail').value.trim();
     const notifPref = document.getElementById('notifPref').value;
 
     if (!newName || !newEmail) {
-        showToast('name and email are required', 'error');
+        showToast('Name and Email are required', 'error');
         setLoading(false, saveBtn);
         return;
     }
@@ -1166,13 +1165,13 @@ async function saveSettings() {
             localStorage.setItem('adminSettings', JSON.stringify({ notif: notifPref }));
             updateUserHeader();
 
-            showToast('settings saved successfully', 'success');
+            showToast('Settings saved successfully', 'success');
         } else {
             showToast(result.error || 'failed to update settings', 'error');
         }
     } catch (error) {
         console.error('save settings error:', error);
-        showToast('server connection error', 'error');
+        showToast('Server connection error', 'error');
     } finally {
         setLoading(false, saveBtn);
     }
@@ -1186,7 +1185,7 @@ function clearAllData() {
         allAssignTasks = [];
         updateUI();
         updateTasksView();
-        showToast('all data cleared!', 'warning');
+        showToast('All data cleared!', 'warning');
     }
 }
 
